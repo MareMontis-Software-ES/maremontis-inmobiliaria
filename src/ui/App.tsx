@@ -1,5 +1,5 @@
 import {useMemo,useState} from "react";
-import {Bell,Building2,CalendarDays,Check,ChevronDown,ChevronLeft,ChevronRight,CircleHelp,ClipboardList,FileText,Folder,House,KeyRound,Landmark,LogOut,Mail,MapPin,Menu,Plus,Save,Search,Settings,Shield,Users,Wrench,History,Euro,Phone,UserRound,AlertTriangle,ChartNoAxesColumnIncreasing, Pencil, X} from "lucide-react";
+import {Bell,Building2,CalendarDays,Check,ChevronDown,ChevronLeft,ChevronRight,CircleHelp,ClipboardList,FileText,Folder,House,KeyRound,Landmark,LogOut,Mail,MapPin,Menu,Plus,Save,Search,Settings,Shield,Users,Wrench,History,Euro,Phone,UserRound,AlertTriangle,ChartNoAxesColumnIncreasing, Pencil, X, ContactRound} from "lucide-react";
 
 type Client={id:number;clientCode:string;adminNumber:string;name:string;kind:string;email:string;phone:string;town:string;status:"Actiu"|"Inactiu"};
 const initialClients:Client[]=[
@@ -7,7 +7,7 @@ const initialClients:Client[]=[
 {id:2,clientCode:"0002",adminNumber:"4300000017",name:"Client de prova",kind:"Client",email:"client@exemple.cat",phone:"600 000 000",town:"Torroella de Montgrí",status:"Actiu"}
 ];
 const navItems=[["Inici","Inici",House],["Clients","Propietaris",UserRound],["Immobles","Immobles",Building2],["Revisions","Revisions",CalendarDays],["Incidències","Incidències",AlertTriangle],["Gestió econòmica","Cobros i pagaments",Landmark],["Estadístiques","Estadístiques",ChartNoAxesColumnIncreasing]] as const;
-const clientTabs=[["Dades",Users],["finques",House],["impostos",Landmark],["cònjuge - copropietari",Users],["matrícules",FileText]] as const;
+const clientTabs=[["Dades",ContactRound],["finques",House],["impostos",Landmark],["cònjuge - copropietari",Users],["matrícules",FileText]] as const;
 const propertyTabs=[["dades generals",FileText],["propietat",Users],["contracte",FileText],["claus",KeyRound],["serveis",Wrench],["assegurances i certificats",Shield],["impostos",Euro],["manteniments",CalendarDays],["incidències",AlertTriangle],["documentació",Folder],["historial",History]] as const;
 const clientFields=[["Sr./Sra.","Sra."],["Nom","ALBA"],["Cognoms","MARLASCA"],["Nom reduït","ANTONI"],["NIF / CIF",""]];
 const addressFields=[["C/","Carrer"],["Nom via","Golf"],["Número","186"],["Bloc",""],["Urbanització","Urb. Raco del Golf 16"],["C.P.","08014"],["Població","Barcelona"],["Província","Barcelona"],["País","FRANCE"]];
