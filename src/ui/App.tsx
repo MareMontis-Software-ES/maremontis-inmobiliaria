@@ -6,8 +6,8 @@ const initialClients:Client[]=[
 {id:1,clientCode:"0001",adminNumber:"4300000016",name:"ALBA MARLASCA",kind:"Propietària",email:"alba.marlasca@email.fr",phone:"+33 6 12 34 56 78",town:"Barcelona",status:"Actiu"},
 {id:2,clientCode:"0002",adminNumber:"4300000017",name:"Client de prova",kind:"Client",email:"client@exemple.cat",phone:"600 000 000",town:"Torroella de Montgrí",status:"Actiu"}
 ];
-const navItems=[["Inici","Inici",House],["Clients","Propietaris",Users],["Immobles","Immobles",Building2],["Revisions","Revisions",CalendarDays],["Incidències","Incidències",AlertTriangle],["Gestió econòmica","Cobros i pagaments",Landmark],["Estadístiques","Estadístiques",ChartNoAxesColumnIncreasing]] as const;
-const clientTabs=[["Dades",UserRound],["finques",House],["impostos",Landmark],["cònjuge - copropietari",Users],["matrícules",FileText]] as const;
+const navItems=[["Inici","Inici",House],["Clients","Propietaris",UserRound],["Immobles","Immobles",Building2],["Revisions","Revisions",CalendarDays],["Incidències","Incidències",AlertTriangle],["Gestió econòmica","Cobros i pagaments",Landmark],["Estadístiques","Estadístiques",ChartNoAxesColumnIncreasing]] as const;
+const clientTabs=[["Dades",Users],["finques",House],["impostos",Landmark],["cònjuge - copropietari",Users],["matrícules",FileText]] as const;
 const propertyTabs=[["dades generals",FileText],["propietat",Users],["contracte",FileText],["claus",KeyRound],["serveis",Wrench],["assegurances i certificats",Shield],["impostos",Euro],["manteniments",CalendarDays],["incidències",AlertTriangle],["documentació",Folder],["historial",History]] as const;
 const clientFields=[["Sr./Sra.","Sra."],["Nom","ALBA"],["Cognoms","MARLASCA"],["Nom reduït","ANTONI"],["NIF / CIF",""]];
 const addressFields=[["C/","Carrer"],["Nom via","Golf"],["Número","186"],["Bloc",""],["Urbanització","Urb. Raco del Golf 16"],["C.P.","08014"],["Població","Barcelona"],["Província","Barcelona"],["País","FRANCE"]];
