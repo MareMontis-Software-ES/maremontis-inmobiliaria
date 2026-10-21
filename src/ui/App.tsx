@@ -6,7 +6,7 @@ const initialClients:Client[]=[
 {id:1,name:"ALBA MARLASCA",kind:"Propietària",email:"alba.marlasca@email.fr",phone:"+33 6 12 34 56 78",town:"Barcelona",status:"Actiu"},
 {id:2,name:"Client de prova",kind:"Client",email:"client@exemple.cat",phone:"600 000 000",town:"Torroella de Montgrí",status:"Actiu"}
 ];
-const navItems=[["Inici",House],["Immobles",Building2],["Propietaris",Users],["Contractes",FileText],["Revisions",CalendarDays],["Incidències",AlertTriangle],["Claus",KeyRound],["Notes de servei",ClipboardList],["Documents",Folder],["Industrials",Wrench],["Cobros i pagaments",Landmark],["Impostos",Euro],["Comptabilitat",FileText],["Estadístiques",ChartNoAxesColumnIncreasing]] as const;
+const navItems=[["Inici","Inici",House],["Clientes","Propietaris",Users],["Immobles","Immobles",Building2],["Revisions","Revisions",CalendarDays],["Incidències","Incidències",AlertTriangle],["Gestió econòmica","Cobros i pagaments",Landmark],["Estadístiques","Estadístiques",ChartNoAxesColumnIncreasing]] as const;
 const clientTabs=[["clients",Users],["finques",House],["impostos",Landmark],["cònjuge - copropietari",Users],["matrícules",FileText]] as const;
 const propertyTabs=[["dades generals",FileText],["propietat",Users],["contracte",FileText],["claus",KeyRound],["serveis",Wrench],["assegurances i certificats",Shield],["impostos",Euro],["manteniments",CalendarDays],["incidències",AlertTriangle],["documentació",Folder],["historial",History]] as const;
 const clientFields=[["Sr./Sra.","Sra."],["Nom","ALBA"],["Cognoms","MARLASCA"],["Nom reduït","ANTONI"],["NIF / CIF",""]];
@@ -21,7 +21,7 @@ const isDetail=section==="Propietaris"&&!!selected&&!adding;
 return <div className="app-shell">
 <aside className="sidebar">
 <div className="brand"><div className="brand-symbol"><House size={31}/><span></span></div><div><strong>MareMontis</strong><small>Gestió Immobiliària</small></div></div>
-<nav className="side-nav">{navItems.map(([label,Icon])=><button key={label} className={"nav-item "+(section===label?"active":"")} onClick={()=>{setSection(label);setSelected(label==="Propietaris"?initialClients[0]:null);setAdding(false);setTab(label==="Immobles"?"dades generals":"clients")}}><Icon size={22}/><span>{label}</span></button>)}</nav>
+<nav className="side-nav">{navItems.map(([label,route,Icon])=><button key={label} className={"nav-item "+(section===route?"active":"")} onClick={()=>{setSection(route);setSelected(route==="Propietaris"?initialClients[0]:null);setAdding(false);setTab(route==="Immobles"?"dades generals":"clients")}}><Icon size={22}/><span>{label}</span></button>)}</nav>
 <div className="sidebar-bottom"><button className="nav-item" onClick={()=>setSection("Configuració")}><Settings size={22}/><span>Configuració</span></button><div className="user-profile"><div className="user-icon"><Users size={19}/></div><div><strong>Administració</strong><small>Administrador</small></div><ChevronDown size={16}/></div></div>
 </aside>
 <main className="main-area">
