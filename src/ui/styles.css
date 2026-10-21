@@ -23,3 +23,28 @@
 @media(max-width:1300px){.dashboard-layout{grid-template-columns:minmax(0,1fr) 190px}.stat-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.module-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.welcome-banner{min-height:108px}.dashboard-pair{grid-template-columns:1fr}.dash-panel .alert-row{padding:7px}.module-tile{height:82px}}
 @media(max-width:850px){.dashboard-area{padding:0 8px 10px}.dashboard-layout{grid-template-columns:1fr}.dashboard-right{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.due-panel{grid-column:1/-1}.welcome-banner{min-height:100px}.welcome-copy h1{font-size:24px}.welcome-date{display:none}.stat-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.dashboard-pair{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.dashboard-right,.dashboard-pair{grid-template-columns:1fr}.stat-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.property-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.property-cards>button:nth-child(n+5){display:none}.module-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.welcome-weather{min-width:75px;padding:8px}.welcome-copy{padding:14px}.welcome-copy h1{font-size:20px}.welcome-copy p{font-size:11px}.dash-table-head{grid-template-columns:20px minmax(65px,1fr) 60px 60px}.alert-row{grid-template-columns:18px minmax(65px,1fr) 60px 60px}.task-row{grid-template-columns:34px minmax(65px,1fr) 48px 12px}}
+
+
+/* Ajuste de la portada al diseño visual aprobado MareMontis */
+.welcome-banner{
+  background-image:
+    linear-gradient(90deg,rgba(8,31,25,.88) 0%,rgba(10,43,34,.64) 39%,rgba(12,45,36,.08) 75%),
+    url("https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=2000&q=85");
+  background-position:center 54%;
+  background-size:cover;
+  border-color:#d4c8ad;
+  min-height:116px;
+}
+.welcome-copy h1{font-size:30px;letter-spacing:-.35px}
+.welcome-weather,.welcome-date{backdrop-filter:blur(2px);text-shadow:0 1px 2px #17372c66}
+.property-thumb{
+  background-size:cover;
+  background-position:center;
+  color:#fff;
+}
+.property-thumb svg{opacity:.18}
+.thumb-0{background-image:linear-gradient(#183d3020,#102c24aa),url("https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=500&q=80")}
+.thumb-1{background-image:linear-gradient(#183d3020,#102c24aa),url("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=500&q=80")}
+.thumb-2{background-image:linear-gradient(#183d3020,#102c24aa),url("https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=500&q=80")}
+.thumb-3{background-image:linear-gradient(#183d3020,#102c24aa),url("https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=500&q=80")}
+.thumb-4{background-image:linear-gradient(#183d3020,#102c24aa),url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=500&q=80")}
