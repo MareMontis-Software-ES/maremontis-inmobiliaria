@@ -189,3 +189,9 @@
 .dashboard-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media(max-width:900px){.record-grid,.dashboard-pair{grid-template-columns:1fr}.stat-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.page-title{align-items:flex-start;flex-direction:column}}
 @media(max-width:560px){.auth-card{padding:22px}.stat-cards{grid-template-columns:1fr 1fr}.bottom-bar{position:static;flex-direction:column}.record-tabs button{padding:10px}.client-results th,.client-results td{padding:9px}}
+
+
+.contact-edit-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(90px,1fr) minmax(130px,1.4fr) auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--line)}
+.contact-edit-row .field{margin:0}
+.contact-edit-row .cancel-btn{margin-bottom:0}
+@media(max-width:700px){.contact-edit-row{grid-template-columns:1fr 1fr}.contact-edit-row .field:last-of-type{grid-column:1/-1}}
