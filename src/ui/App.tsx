@@ -1,10 +1,10 @@
 import {useMemo,useState} from "react";
 import {Bell,Building2,CalendarDays,Check,ChevronDown,ChevronLeft,ChevronRight,CircleHelp,ClipboardList,FileText,Folder,House,KeyRound,Landmark,LogOut,Mail,MapPin,Menu,Plus,Save,Search,Settings,Shield,Users,Wrench,History,Euro,Phone,UserRound,AlertTriangle,ChartNoAxesColumnIncreasing, Pencil, X} from "lucide-react";
 
-type Client={id:number;name:string;kind:string;email:string;phone:string;town:string;status:"Actiu"|"Inactiu"};
+type Client={id:number;clientCode:string;adminNumber:string;name:string;kind:string;email:string;phone:string;town:string;status:"Actiu"|"Inactiu"};
 const initialClients:Client[]=[
-{id:1,name:"ALBA MARLASCA",kind:"Propietària",email:"alba.marlasca@email.fr",phone:"+33 6 12 34 56 78",town:"Barcelona",status:"Actiu"},
-{id:2,name:"Client de prova",kind:"Client",email:"client@exemple.cat",phone:"600 000 000",town:"Torroella de Montgrí",status:"Actiu"}
+{id:1,clientCode:"0001",adminNumber:"4300000016",name:"ALBA MARLASCA",kind:"Propietària",email:"alba.marlasca@email.fr",phone:"+33 6 12 34 56 78",town:"Barcelona",status:"Actiu"},
+{id:2,clientCode:"0002",adminNumber:"4300000017",name:"Client de prova",kind:"Client",email:"client@exemple.cat",phone:"600 000 000",town:"Torroella de Montgrí",status:"Actiu"}
 ];
 const navItems=[["Inici","Inici",House],["Clientes","Propietaris",Users],["Immobles","Immobles",Building2],["Revisions","Revisions",CalendarDays],["Incidències","Incidències",AlertTriangle],["Gestió econòmica","Cobros i pagaments",Landmark],["Estadístiques","Estadístiques",ChartNoAxesColumnIncreasing]] as const;
 const clientTabs=[["clients",Users],["finques",House],["impostos",Landmark],["cònjuge - copropietari",Users],["matrícules",FileText]] as const;
@@ -16,7 +16,7 @@ function Panel({title,icon:Icon,children,action}:{title:string;icon:any;children
 export default function App(){
 const [section,setSection]=useState("Inici"),[clients,setClients]=useState(initialClients),[selected,setSelected]=useState<Client|null>(initialClients[0]),[query,setQuery]=useState(""),[adding,setAdding]=useState(false),[draft,setDraft]=useState({name:"",kind:"Propietari",email:"",phone:"",town:""}),[tab,setTab]=useState("clients"),[saved,setSaved]=useState(false);
 const rows=useMemo(()=>clients.filter(c=>`${c.name} ${c.email} ${c.town} ${c.kind}`.toLowerCase().includes(query.toLowerCase())),[clients,query]);
-function addClient(){if(!draft.name.trim())return;const c:Client={id:Math.max(0,...clients.map(x=>x.id))+1,name:draft.name.toUpperCase(),kind:draft.kind,email:draft.email,phone:draft.phone,town:draft.town,status:"Actiu"};setClients(v=>[...v,c]);setSelected(c);setAdding(false);setDraft({name:"",kind:"Propietari",email:"",phone:"",town:""});}
+function addClient(){if(!draft.name.trim())return;const id=Math.max(0,...clients.map(x=>x.id))+1;const c:Client={id,clientCode:String(Math.max(0,...clients.map(x=>Number(x.clientCode)||0))+1).padStart(4,"0"),adminNumber:String(Math.max(4300000015,...clients.map(x=>Number(x.adminNumber)||0))+1),name:draft.name.toUpperCase(),kind:draft.kind,email:draft.email,phone:draft.phone,town:draft.town,status:"Actiu"};setClients(v=>[...v,c]);setSelected(c);setAdding(false);setDraft({name:"",kind:"Propietari",email:"",phone:"",town:""});}
 const isDetail=section==="Propietaris"&&!!selected&&!adding;
 return <div className="app-shell">
 <aside className="sidebar">
@@ -27,7 +27,7 @@ return <div className="app-shell">
 <main className="main-area">
 <div className="topbar"><div className="breadcrumb">{section} <ChevronRight size={14}/><span>{isDetail?"Fitxa del client":section==="Immobles"?"Fitxa de l'immoble":adding?"Nou client":""}</span></div><label className="global-search"><Search size={19}/><input placeholder="Buscar clients, immobles, matrícules..." value={query} onChange={e=>setQuery(e.target.value)}/></label><div className="top-actions"><button aria-label="Alertes"><Bell size={22}/><i>3</i></button><button aria-label="Ajuda"><CircleHelp size={22}/></button><button aria-label="Sortir"><LogOut size={22}/></button></div></div>
 {section==="Inici"?<Dashboard onNavigate={(s)=>{setSection(s);setSelected(s==="Propietaris"?initialClients[0]:null);setAdding(false)}}/>:isDetail?<div className="work-area">
-<section className="record-banner"><div className="record-summary"><div className="record-number">Núm. Adm. <strong>4300000016</strong><span className="record-state">RESIDENT</span></div><div><b>A.</b><strong>{selected.name}</strong></div><div><b>Adreça</b><strong>C. GOLF 186, URB. RACO DEL GOLF 16</strong></div><div><b>Núm. Adm.</b><strong>147</strong></div></div><div className="other-properties"><strong>Altres propietats del client</strong>{["C. GOLF 186, URB. RACO DEL GOLF 16","C. MAR 12, CALA LLAMP","AV. PORT 3, PALMA","C. OLIVERES 5, BEGUR"].map((x,i)=><div key={x}><House size={16}/>{x}</div>)}</div><div className="address-card"><span>Sola, núm. 38</span><span>08014　Barcelona</span><span>FRANCE</span><button className="outline-btn"><MapPin size={16}/> Veure al mapa</button></div></section>
+<section className="record-banner"><div className="record-summary"><div className="record-number">Código cliente <strong>{selected.clientCode}</strong><span className="record-state">RESIDENT</span></div><div><b>Núm. Adm.</b><strong>{selected.adminNumber}</strong></div><div><b>Cliente</b><strong>{selected.name}</strong></div><div><b>Adreça</b><strong>C. GOLF 186, URB. RACO DEL GOLF 16</strong></div><div><b>Núm. Adm.</b><strong>147</strong></div></div><div className="other-properties"><strong>Altres propietats del client</strong>{["C. GOLF 186, URB. RACO DEL GOLF 16","C. MAR 12, CALA LLAMP","AV. PORT 3, PALMA","C. OLIVERES 5, BEGUR"].map((x,i)=><div key={x}><House size={16}/>{x}</div>)}</div><div className="address-card"><span>Sola, núm. 38</span><span>08014　Barcelona</span><span>FRANCE</span><button className="outline-btn"><MapPin size={16}/> Veure al mapa</button></div></section>
 <div className="record-tabs">{clientTabs.map(([label,Icon])=><button key={label} className={tab===label?"selected":""} onClick={()=>setTab(label)}><Icon size={17}/><span>{label}</span></button>)}</div>
 <div className="record-grid">
 <div className="column-stack">
@@ -49,7 +49,7 @@ return <div className="app-shell">
 <div className="new-client-title"><Users size={22}/><strong>Nuevo cliente</strong></div>
 <div className="new-client-panels">
 <section className="new-client-panel"><h3><UserRound size={18}/>Datos identificativos</h3><div className="new-client-fields">
-<label>Tratamiento<select defaultValue="Sra."><option>Sra.</option><option>Sr.</option><option>Empresa</option></select></label>
+<label>Código de cliente<input name="codigo-cliente" value={String(Math.max(0,...clients.map(x=>Number(x.clientCode)||0))+1).padStart(4,"0")} readOnly /></label><label>Número de administración<input name="numero-administracion" value={String(Math.max(4300000015,...clients.map(x=>Number(x.adminNumber)||0))+1)} readOnly /></label><label>Tratamiento<select defaultValue="Sra."><option>Sra.</option><option>Sr.</option><option>Empresa</option></select></label>
 <label>Nombre<input name="nombre" /></label><label>Apellidos<input name="apellidos"/></label><label>Nombre reducido<input name="nombre-reducido"/></label><label>NIF / CIF<input name="nif"/></label>
 <label>Tipo de cliente<select defaultValue="Particular"><option>Particular</option><option>Empresa</option></select></label><label>Estado<select defaultValue="Residente"><option>Residente</option><option>No residente</option></select></label>
 <label>Responsable<select defaultValue="Torrent"><option>Torrent</option><option>Administración</option></select></label></div></section>
