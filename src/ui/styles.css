@@ -50,3 +50,20 @@
 .thumb-4{background-image:linear-gradient(#183d3020,#102c24aa),url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=500&q=80")}
 
 /* Rebuild de despliegue tras habilitar acceso de Vercel al repositorio. */
+
+
+/* Ajuste solicitado: inmuebles recientes más proporcionados y fotografías en los módulos */
+.property-cards{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;padding:7px}
+.property-cards>button{min-height:154px;padding-bottom:8px}
+.property-thumb{height:94px;background-size:cover;background-position:center}
+.property-cards>button>strong{margin-top:7px;font-size:11px}
+.module-tile{background-size:cover;background-position:center;min-height:112px}
+.module-tile:before{background:linear-gradient(0deg,rgba(9,27,21,.94) 0%,rgba(9,27,21,.5) 52%,rgba(9,27,21,.08) 100%)}
+.tile-0{background-image:url("https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=700&q=80")}
+.tile-1{background-image:url("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=700&q=80")}
+.tile-2{background-image:url("https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=700&q=80")}
+.tile-3{background-image:url("https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=700&q=80")}
+.tile-4{background-image:url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=700&q=80")}
+.tile-5{background-image:url("https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=700&q=80")}
+@media(max-width:1300px){.property-thumb{height:82px}.property-cards>button{min-height:142px}}
+@media(max-width:560px){.property-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.property-thumb{height:100px}.module-tile{min-height:105px}}
