@@ -67,3 +67,14 @@
 .tile-5{background-image:url("https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=700&q=85")}
 @media(max-width:1300px){.property-thumb{height:82px}.property-cards>button{min-height:142px}.module-tile{min-height:120px}}
 @media(max-width:560px){.property-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.property-thumb{height:100px}.module-tile{min-height:115px}}
+
+
+/* Estado seleccionado del menú lateral: icono verde, fondo beige y acento dorado */
+.side-nav{padding:9px 10px;gap:3px}
+.nav-item{position:relative;gap:12px;padding:7px 10px;min-height:40px;border-radius:5px;color:#20352d;font-size:13px}
+.nav-item svg{width:20px;height:20px;color:#20352d;stroke-width:2}
+.nav-item:hover{background:#eee8da}
+.nav-item.active{background:#d9d1bd;color:#20352d}
+.nav-item.active:before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:2px;background:#c28b38}
+.nav-item.active svg{width:29px;height:29px;box-sizing:content-box;padding:5px;margin-left:-5px;border-radius:5px;background:#174c40;color:#fff;stroke:#fff}
+.sidebar-bottom .nav-item.active{background:#d9d1bd;color:#20352d}
