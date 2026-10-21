@@ -107,3 +107,27 @@
 .client-results-footer button:disabled{opacity:.75}
 @media(max-width:1300px){.client-filter-row{grid-template-columns:repeat(3,minmax(120px,1fr))}.client-filter-row button{justify-self:start}}
 @media(max-width:700px){.client-filter-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.client-results-footer{align-items:flex-start;flex-direction:column}.client-results-footer>div{flex-wrap:wrap}.client-search-tools{padding:10px}}
+
+
+/* Alta completa de clientes: campos contrastados con el PDF y el formulario de referencia */
+.new-client-form{display:flex;flex-direction:column;gap:12px;padding:0 4px 12px;min-width:0}
+.new-client-title{display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--green);color:white;border-radius:5px;font-size:19px}
+.new-client-panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.new-client-panel{min-width:0;border:1px solid #e5dfd3;border-radius:5px;background:#fffdf8;padding:0 12px 13px}
+.new-client-panel h3{display:flex;align-items:center;gap:9px;margin:0 -12px 10px;padding:10px 13px;border-bottom:1px solid #e8e2d7;background:#f5f1e8;color:#173f34;font-size:14px;font-weight:600}
+.new-client-panel h3>svg{flex-shrink:0}
+.new-client-panel h3 .add-small{margin-left:auto}
+.new-client-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 11px}
+.new-client-fields>label,.new-client-fields .phone-extra>label,.new-client-fields .email-extra>label{display:flex;flex-direction:column;gap:4px;min-width:0;color:#314037;font-size:12px}
+.new-client-fields input,.new-client-fields select,.new-client-panel>.field input{width:100%;min-width:0;height:34px;padding:5px 8px;border:1px solid #ded7cb;border-radius:4px;background:#faf8f2;color:#25352d;font:inherit;font-size:12px}
+.new-client-fields textarea{width:100%;resize:vertical;border:1px solid #ded7cb;border-radius:4px;background:#faf8f2}
+.new-client-fields .wide-field{grid-column:1/-1}
+.new-client-fields .contact-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+.new-client-fields .phone-extra,.new-client-fields .email-extra{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;grid-column:1/-1}
+.new-client-fields .span-two{grid-column:span 1}
+.new-client-notes{width:100%;min-height:110px;resize:vertical;border:1px solid #ded7cb;border-radius:4px;background:#faf8f2;padding:8px}
+.upload-placeholder{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px dashed #cfc7b8;border-radius:4px;color:#6e786f;font-size:12px}
+.upload-placeholder input{max-width:100%;font-size:12px}
+.new-client-form .form-actions{display:flex;gap:10px;padding:10px;background:#e9e5db;border-radius:5px}
+@media(max-width:1050px){.new-client-panels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.new-client-panels{grid-template-columns:1fr}.new-client-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
