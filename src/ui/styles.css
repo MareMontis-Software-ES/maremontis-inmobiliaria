@@ -173,3 +173,10 @@
 /* Client names and surnames: consistent capitalization in the client list only. */
 .client-results .client-list-row td:nth-child(2),
 .client-results .client-list-row td:nth-child(3) { text-transform: capitalize; }
+
+
+/* Client list: names and surnames in uppercase bold; town in its own column. */
+.client-results .client-list-row td:nth-child(2),
+.client-results .client-list-row td:nth-child(3){font-weight:700;text-transform:uppercase}
+.client-home-towns{display:flex;flex-direction:column;gap:6px;color:#263b32;font-size:12px}
+.client-home-towns span{white-space:nowrap}
