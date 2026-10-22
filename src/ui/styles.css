@@ -150,3 +150,6 @@
   .client-results table { min-width: 720px; }
   .client-home-list { min-width: 230px; }
 }
+
+.property-choice { display:flex; align-items:flex-start; gap:8px; width:100%; padding:8px 10px; border:1px solid transparent; border-radius:7px; background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
+.property-choice:hover,.property-choice.active { background:#e5f1eb; border-color:#b5d2c4; color:#174f45; }
