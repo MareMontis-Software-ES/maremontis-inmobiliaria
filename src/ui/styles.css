@@ -153,3 +153,19 @@
 
 .property-choice { display:flex; align-items:flex-start; gap:8px; width:100%; padding:8px 10px; border:1px solid transparent; border-radius:7px; background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
 .property-choice:hover,.property-choice.active { background:#e5f1eb; border-color:#b5d2c4; color:#174f45; }
+
+/* Match the clear, full-width property rows used in the client overview */
+.other-properties { min-width:0; }
+.other-properties > strong { display:block; text-align:center; margin-bottom:10px; }
+.other-properties .property-choice {
+ display:flex; align-items:center; justify-content:flex-start; gap:12px;
+ width:100%; min-height:43px; box-sizing:border-box; padding:10px 14px;
+ border:1px solid #d8d0c0; border-radius:0; background:#f4efdf;
+ color:#183b32; text-align:left; font-size:14px; font-weight:400;
+}
+.other-properties .property-choice:first-of-type { border-radius:5px 5px 0 0; }
+.other-properties .property-choice:last-of-type { border-radius:0 0 5px 5px; }
+.other-properties .property-choice:only-of-type { border-radius:5px; }
+.other-properties .property-choice svg { flex:0 0 18px; fill:#174f45; }
+.other-properties .property-choice:hover { background:#e5f1eb; }
+.other-properties .property-choice.active { background:#e5f1eb; border-color:#d8d0c0; color:#183b32; }
