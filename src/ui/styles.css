@@ -169,3 +169,7 @@
 .other-properties .property-choice svg { flex:0 0 18px; fill:#174f45; }
 .other-properties .property-choice:hover { background:#e5f1eb; }
 .other-properties .property-choice.active { background:#e5f1eb; border-color:#d8d0c0; color:#183b32; }
+
+/* Client names and surnames: consistent capitalization in the client list only. */
+.client-results .client-list-row td:nth-child(2),
+.client-results .client-list-row td:nth-child(3) { text-transform: capitalize; }
