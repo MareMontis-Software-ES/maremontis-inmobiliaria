@@ -54,6 +54,12 @@ export interface ClientFull {
   vehicles: Vehicle[];
 }
 
+/** Serveis que inclou el contracte d'una finca (PDF 2). Sense contracte assignat, tot habilitat. */
+export interface ContractFeatures {
+  contract: string;
+  revisions: boolean; rent_210: boolean; visits: boolean; key_custody: boolean; receipts: boolean;
+}
+
 export interface PropertyLink {
   id: string;
   admin_number: number;
@@ -61,6 +67,7 @@ export interface PropertyLink {
   municipality: string;
   status: string;
   ownership_percentage: number | null;
+  features: ContractFeatures;
 }
 
 export interface ClientSummary {

@@ -1,6 +1,7 @@
 // Taules de manteniment: tipus de contracte, industrials, zones, usuaris i textos de correu.
 import { supabase } from "../lib/supabase";
 import { s } from "../lib/format";
+import type { ContractFeatures } from "../types";
 
 type Row = Record<string, any>;
 
@@ -14,6 +15,16 @@ export const CONTRACT_FLAGS: [keyof ContractType, string][] = [
   ["includes_revisions", "Revisió immoble"], ["includes_rent_210", "Renda Mod. 210"], ["includes_visits", "Visites"],
   ["includes_key_custody", "Custòdia de claus"], ["includes_receipts", "Rebuts"],
 ];
+/** Columnes a incrustar en una consulta de finques: `properties(..., ${CONTRACT_SELECT})` */
+export const CONTRACT_SELECT = "contract_types(description, includes_revisions, includes_rent_210, includes_visits, includes_key_custody, includes_receipts)";
+
+/** Serveis de la finca segons el seu contracte. Sense contracte, tot habilitat (com la vista cases_overview). */
+export function contractFeatures(ct: Row | null | undefined): ContractFeatures {
+  if (!ct) return { contract: "", revisions: true, rent_210: true, visits: true, key_custody: true, receipts: true };
+  return { contract: s(ct.description), revisions: !!ct.includes_revisions, rent_210: !!ct.includes_rent_210,
+    visits: !!ct.includes_visits, key_custody: !!ct.includes_key_custody, receipts: !!ct.includes_receipts };
+}
+
 export const emptyContractType = (): ContractType => ({ description: "", price: "", num_revisions: "", includes_revisions: true, includes_rent_210: true, includes_visits: false, includes_key_custody: true, includes_receipts: false, active: true });
 
 export async function listContractTypes(): Promise<ContractType[]> {

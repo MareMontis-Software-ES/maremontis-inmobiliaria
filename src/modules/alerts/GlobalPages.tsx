@@ -116,7 +116,8 @@ export function KeysPage({ canWrite, userId, onOpenClient }: { canWrite: boolean
 
   const load = () => listAllKeys().then(setRows).catch(e => setError(errorText(e)));
   useEffect(() => { void load(); }, []);
-  useEffect(() => { if (adding && !props.length) { propertyPickList().then(setProps).catch(() => {}); listIndustrials().then(setInds).catch(() => {}); } }, [adding]);
+  // Només finques amb un contracte que inclou la custòdia de claus
+  useEffect(() => { if (adding && !props.length) { propertyPickList().then(l => setProps(l.filter(p => p.key_custody))).catch(() => {}); listIndustrials().then(setInds).catch(() => {}); } }, [adding]);
 
   const list = (rows || []).filter(k => (filter === "totes" || (!k.returned_at && (filter === "fora" || k.overdue))) &&
     (!q || `${k.finca} ${k.admin_number} ${k.client_name} ${k.delivered_to} ${k.reason}`.toLowerCase().includes(q.toLowerCase())));

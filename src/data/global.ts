@@ -1,6 +1,7 @@
 // Consultes per a les pantalles globals (Alertes, Claus) i selectors de client/finca.
 import { supabase } from "../lib/supabase";
 import { fullName, s, todayISO } from "../lib/format";
+import { CONTRACT_SELECT, contractFeatures } from "./admin";
 
 type Row = Record<string, any>;
 
@@ -78,10 +79,10 @@ export async function listAllKeys(): Promise<KeyRow[]> {
 }
 
 // ---------------- Selectors ----------------
-export interface PropertyPick { id: string; label: string; admin_number: number; client_id: string | null; client_name: string; key_office: string }
+export interface PropertyPick { id: string; label: string; admin_number: number; client_id: string | null; client_name: string; key_office: string; key_custody: boolean }
 export async function propertyPickList(): Promise<PropertyPick[]> {
   const { data, error } = await supabase.from("properties")
-    .select("id, admin_number, street_type, address, municipality, key_office, property_owners(client_id, is_main, clients(first_name, last_name))")
+    .select(`id, admin_number, street_type, address, municipality, key_office, ${CONTRACT_SELECT}, property_owners(client_id, is_main, clients(first_name, last_name))`)
     .eq("status", "active").order("admin_number");
   if (error) throw error;
   return (data || []).map((p: Row) => {
@@ -89,6 +90,7 @@ export async function propertyPickList(): Promise<PropertyPick[]> {
     const main = owners.find((o: Row) => o.is_main) || owners[0];
     const client_name = main?.clients ? fullName(main.clients.first_name, main.clients.last_name) : "";
     return { id: p.id, admin_number: p.admin_number, client_id: main?.client_id || null, client_name, key_office: s(p.key_office),
+      key_custody: contractFeatures(p.contract_types).key_custody,
       label: `${p.admin_number} · ${[p.street_type, p.address].filter(Boolean).join(" ")}${p.municipality ? ` (${p.municipality})` : ""}${client_name ? " — " + client_name : ""}` };
   });
 }

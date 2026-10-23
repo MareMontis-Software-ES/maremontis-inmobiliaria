@@ -2,6 +2,7 @@
 // mai directament amb Supabase.
 import { supabase } from "../lib/supabase";
 import { s } from "../lib/format";
+import { CONTRACT_SELECT, contractFeatures } from "./admin";
 import type { ClientFull, ClientSummary, PropertyLink, RelatedPerson } from "../types";
 
 export const emptyAddress = () => ({
@@ -37,7 +38,7 @@ const LIST_SELECT = `id, client_code, account_code, title, first_name, last_name
   client_phones(country_prefix, phone_number, is_primary),
   client_emails(email, is_primary),
   client_addresses(municipality, country, is_primary),
-  property_owners(ownership_percentage, properties(id, admin_number, street_type, address, municipality, status))`;
+  property_owners(ownership_percentage, properties(id, admin_number, street_type, address, municipality, status, ${CONTRACT_SELECT}))`;
 
 type Row = Record<string, any>;
 
@@ -55,6 +56,7 @@ function propertyLinks(rows: Row[] | null | undefined): PropertyLink[] {
       municipality: s(o.properties.municipality),
       status: s(o.properties.status),
       ownership_percentage: o.ownership_percentage,
+      features: contractFeatures(o.properties.contract_types),
     }))
     // Actives primer, després per número d'administració
     .sort((a, b) => Number(a.status === "baixa") - Number(b.status === "baixa") || a.admin_number - b.admin_number);
@@ -79,7 +81,7 @@ export async function listClients(): Promise<ClientSummary[]> {
 export async function getClient(id: string): Promise<{ full: ClientFull; properties: PropertyLink[]; accountCode: string }> {
   const { data: c, error } = await supabase.from("clients")
     .select(`*, client_addresses(*), client_phones(*), client_emails(*), client_related_persons!client_related_persons_client_id_fkey(*), client_vehicles(*),
-             property_owners(ownership_percentage, properties(id, admin_number, street_type, address, municipality, status))`)
+             property_owners(ownership_percentage, properties(id, admin_number, street_type, address, municipality, status, ${CONTRACT_SELECT}))`)
     .eq("id", id).single();
   if (error) throw error;
   const ad = primary(c.client_addresses);
