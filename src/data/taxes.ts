@@ -1,6 +1,7 @@
 // Impostos de totes les finques per exercici, llistat del Model 210 i importació d'IBI.
 import { supabase } from "../lib/supabase";
 import { fullName, s } from "../lib/format";
+import { CONTRACT_SELECT, contractFeatures } from "./admin";
 
 type Row = Record<string, any>;
 
@@ -13,7 +14,7 @@ export interface TaxLine {
 
 export async function listTaxYear(year: number): Promise<TaxLine[]> {
   const { data, error } = await supabase.from("properties")
-    .select(`id, admin_number, street_type, address, zone, status, baixa_date,
+    .select(`id, admin_number, street_type, address, zone, status, baixa_date, ${CONTRACT_SELECT},
              property_taxes(id, tax_year, cadastral_ref, cadastral_value, revaluation_pct, ibi_quota, tax_rate, taxable_base, rent_quota, paid, paid_date),
              property_owners(ownership_percentage, is_main, clients(first_name, last_name, dni, nie, resident), client_related_persons(first_name, last_name, dni, nie))`)
     .order("admin_number");
@@ -21,6 +22,8 @@ export async function listTaxYear(year: number): Promise<TaxLine[]> {
   return (data || [])
     // Les finques donades de baixa l'any següent encara declaren (PDF: «l'any següent a la baixa encara cal presentar el 210»)
     .filter((p: Row) => p.status === "active" || (p.baixa_date && Number(String(p.baixa_date).slice(0, 4)) >= year))
+    // Només les finques amb un contracte que inclou la renda / Model 210
+    .filter((p: Row) => contractFeatures(p.contract_types).rent_210)
     .map((p: Row) => {
       const t = (p.property_taxes || []).find((x: Row) => x.tax_year === year);
       return {

@@ -12,7 +12,7 @@ import { TaxesTab } from "../finques/TaxesTab";
 import { KeysTab } from "../finques/KeysTab";
 import { CaseView } from "../cases/CaseView";
 import { IncidentsView } from "../incidents/IncidentsView";
-import type { ClientFull, Profile, PropertyLink } from "../../types";
+import type { ClientFull, ContractFeatures, Profile, PropertyLink } from "../../types";
 
 export const CLIENT_TABS = [
   ["client", "Client", ContactRound, false],
@@ -25,6 +25,16 @@ export const CLIENT_TABS = [
   ["incidencies", "Incidències", AlertTriangle, false],
 ] as const;
 export type ClientTab = typeof CLIENT_TABS[number][0];
+
+// Pestanyes que depenen d'un servei del tipus de contracte de la finca (PDF 2: el contracte habilita funcions)
+const TAB_FEATURE: Partial<Record<ClientTab, [keyof ContractFeatures, string]>> = {
+  impostos: ["rent_210", "la renda / Model 210"],
+  claus: ["key_custody", "la custòdia de claus"],
+  revisions: ["revisions", "les revisions de l'immoble"],
+};
+const FEATURE_LABELS: [keyof ContractFeatures, string][] = [
+  ["revisions", "Revisions"], ["rent_210", "Renda 210"], ["visits", "Visites"], ["key_custody", "Claus"], ["receipts", "Rebuts"],
+];
 
 const label = (list: [string, string][], v: string) => list.find(x => x[0] === v)?.[1] || v;
 
@@ -55,6 +65,9 @@ export function ClientDetail(p: Props) {
   const finca = p.propertyId && p.propertyId !== "new" ? p.properties.find(h => h.id === p.propertyId) || null : null;
   const fincaTabs: ClientTab[] = ["finca", "impostos", "claus", "revisions"];
   const needsFinca = fincaTabs.includes(p.tab);
+  // Amb una finca triada, les pestanyes de serveis que el seu contracte no inclou s'amaguen
+  const excluded = (t: ClientTab) => { const f = TAB_FEATURE[t]; return !!finca && !!f && !finca.features[f[0]]; };
+  const notIncluded = excluded(p.tab) ? TAB_FEATURE[p.tab]![1] : null;
 
   return (
     <div className="work-area">
@@ -93,20 +106,26 @@ export function ClientDetail(p: Props) {
       <div className="detail-layout">
         <div className="detail-main">
           <div className="record-tabs">
-            {CLIENT_TABS.map(([id, text, Icon, perFinca]) => (
+            {CLIENT_TABS.filter(([id]) => !excluded(id) || id === p.tab).map(([id, text, Icon, perFinca]) => (
               <button key={id} className={p.tab === id ? "selected" : ""} onClick={() => p.onTab(id)} title={perFinca ? "De la finca seleccionada" : undefined}>
                 <Icon size={17} /><span>{text}</span>
               </button>
             ))}
           </div>
           {needsFinca && (finca || p.propertyId === "new") && (
-            <div className="finca-context"><House size={15} /> Finca seleccionada: <strong>{p.propertyId === "new" ? "nova" : `${finca!.admin_number} · ${finca!.address}`}</strong></div>
+            <div className="finca-context"><House size={15} /> Finca seleccionada: <strong>{p.propertyId === "new" ? "nova" : `${finca!.admin_number} · ${finca!.address}`}</strong>
+              {finca && <small className="muted"> · {finca.features.contract ? `Contracte ${finca.features.contract}: ${FEATURE_LABELS.filter(([k]) => finca.features[k]).map(([, l]) => l).join(", ") || "cap servei"}` : "Sense tipus de contracte (tots els serveis)"}</small>}
+            </div>
           )}
 
           {needsFinca && !finca && p.propertyId !== "new" ? (
             <div className="tab-pad"><Panel title="Tria una finca" icon={House}>
               <Empty>{p.properties.length ? "Selecciona una de les finques del client a la capçalera." : "Aquest client encara no té cap finca."}</Empty>
               {p.canWrite && !p.properties.length && <button className="save-btn" onClick={() => p.onSelectProperty("new")}><Plus size={16} /> Donar d'alta una finca</button>}
+            </Panel></div>
+          ) : notIncluded ? (
+            <div className="tab-pad"><Panel title="No inclòs al contracte" icon={House}>
+              <Empty>{`El contracte ${finca!.features.contract ? `«${finca!.features.contract}» ` : ""}d'aquesta finca no inclou ${notIncluded}. Es canvia a la pestanya Finca → Contracte o al menú Contractes.`}</Empty>
             </Panel></div>
           ) : p.tab === "finca" ? (
             <FincaTab key={String(p.propertyId)} client={p.full} propertyId={p.propertyId === "new" ? null : p.propertyId} canWrite={p.canWrite} userId={p.userId}

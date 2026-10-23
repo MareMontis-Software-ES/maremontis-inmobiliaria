@@ -43,7 +43,7 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Correu responsables | DE = correu del responsable; només elements en mal estat + observació | Inclòs | ✅ |
 | Correu propietari | En l'idioma del client; textos editables | Inclòs (Configuració → Textos de correu) | ✅ (falta escriure els textos en cada idioma) |
 | Imatges | Nom descriptiu; fotos genèriques d'inventari + específiques de cada revisió | Inclòs | ✅ (cal provar-ho amb fotos reals) |
-| Tipus de contracte | Taula amb descripció, preu, núm. revisions i opcions (revisió, renda 210, visites, claus, rebuts) | Inclòs (menú Contractes) | 🟡 (les opcions encara no amaguen funcions a la fitxa) |
+| Tipus de contracte | Taula amb descripció, preu, núm. revisions i opcions (revisió, renda 210, visites, claus, rebuts) | Inclòs (menú Contractes). A la fitxa, les pestanyes Impostos, Claus i Revisions s'amaguen si el contracte de la finca no les inclou; el llistat de Renda/M-210 i la nova entrega de claus només mostren les finques amb el servei (el control de cases ja calculava les revisions segons el contracte). Sense contracte assignat, tot habilitat | ✅ (visites i rebuts: encara no hi ha cap funció a amagar) |
 | Planificació revisions | Octubre–juny, sense Nadal ni Setmana Santa, cada 2,5 mesos, editable; complementàries | Inclòs | ✅ |
 | Renda / M-210 | Llistat M-210, pagaments, filtres per cognom i zona | Resum per exercici, marcar pagats, llistat M-210 i exportació Excel | 🟡 (fórmula a validar) |
 | Fitxer AEAT i NRC | Generar fitxer per a l'AEAT i comprovar el retorn del banc | — | ⏳ (cal l'especificació dels fitxers) |
@@ -61,5 +61,5 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 3. **Fórmula del Model 210** → confirmar amb l'assessoria (el PDF aplica dues vegades el tipus de gravamen).
 4. **Fitxer d'IBI real** → per adaptar la importació al format oficial.
 5. **Enviament de correu sense obrir Outlook** (amb fotos adjuntes) → cal un servei de correu (p. ex. el compte SMTP de l'empresa o Resend) i una funció al servidor.
-6. **Tipus de contracte que habiliten funcions** → amagar a la fitxa les pestanyes que el contracte no inclou (revisions, 210, claus…).
+6. ~~**Tipus de contracte que habiliten funcions**~~ → fet. Queda pendent quan existeixin les funcions de visites i rebuts.
 7. **Migració de les dades reals** del programa antic (DBF) → importació inicial de clients, finques, impostos, incidències i historial.
