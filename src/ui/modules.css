@@ -269,3 +269,17 @@
 .photo-grid figcaption input{flex:1;min-width:0;border:1px solid transparent;background:transparent;font:inherit;font-size:11px;padding:3px}
 .photo-grid figcaption input:focus{border-color:#ddd5c4;background:#faf8f2}
 @media(max-width:1250px){.master-detail,.inc-layout,.rev-layout{grid-template-columns:1fr}.case-head dl{grid-template-columns:repeat(3,minmax(0,1fr))}.form-grid.three{grid-template-columns:1fr 1fr}}
+
+/* --- Fitxes obertes en pestanyes --- */
+.open-tabs{position:sticky;top:0;z-index:20;display:flex;align-items:flex-end;gap:3px;padding:6px 14px 0;background:#ede7d9;border-bottom:1px solid #d8cfbd;overflow-x:auto;scrollbar-width:thin}
+.open-tab{flex:0 0 auto;display:flex;align-items:center;max-width:230px;height:32px;border:1px solid #d8cfbd;border-bottom:0;border-radius:7px 7px 0 0;background:#e2dccd;color:#3d4a42;font-size:12px}
+.open-tab.on{background:#fffdf7;color:#174c40;font-weight:700;box-shadow:0 -2px 0 #174c40 inset;height:34px}
+.open-tab:hover:not(.on){background:#ebe5d7}
+.list-tab,.open-tab.add,.open-tab.close-all{gap:6px;padding:0 12px;cursor:pointer;font:inherit;font-size:12px}
+.open-tab.add{padding:0 9px}
+.open-tab.close-all{margin-left:auto;background:transparent;border-color:transparent;color:#7b817d;text-decoration:underline}
+.open-tab-label{border:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;padding:0 4px 0 12px;height:100%;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px}
+.open-tab-x{border:0;background:transparent;color:#7b817d;width:24px;height:24px;margin-right:4px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.open-tab-x:hover{background:#d6cfbf;color:#b0391f}
+.dirty-dot{width:8px;height:8px;border-radius:50%;background:#c28b38;flex:0 0 auto}
+.clients-tabs-host .list-view{padding-top:16px}

@@ -54,7 +54,6 @@ export default function App() {
   const canWrite = profile?.role === "admin" || profile?.role === "oficina";
   const go = (s: Section) => {
     setSection(s);
-    if (s === "Clients") setClientView({ mode: "list" });
   };
   const openClient = (id: string) => { setSection("Clients"); setClientView({ mode: "detail", id }); };
   // Tot gira al voltant del client: una finca s'obre dins la fitxa del seu titular principal
@@ -64,21 +63,20 @@ export default function App() {
     else window.alert("Aquesta finca no té cap titular assignat.");
   };
 
-  const crumb = section === "Clients"
-    ? { list: "", detail: "Fitxa del client", new: "Alta de client", edit: "Modificar client" }[clientView.mode]
-    : "";
+  const crumb = "";
 
   return (
     <Shell section={section} crumb={crumb} profile={profile} email={session.user.email || ""} query={query} overdue={overdue}
       onNavigate={go}
-      onSearch={q => { setQuery(q); if (section !== "Clients" || clientView.mode !== "list") { setSection("Clients"); setClientView({ mode: "list" }); } }}
+      onSearch={q => { setQuery(q); setSection("Clients"); setClientView({ mode: "list" }); }}
       onLogout={async () => { await supabase.auth.signOut(); setSection("Inici"); }}>
       {profileError && <div className="work-area"><Notice kind="error">{profileError}</Notice></div>}
+      <div style={{ display: section === "Clients" ? undefined : "none" }}>
+        <ClientsPage view={clientView} setView={setClientView} query={query} setQuery={setQuery} canWrite={canWrite} userId={session.user.id} />
+      </div>
       {section === "Inici" ? (
         <Dashboard canWrite={canWrite} userName={profile?.full_name?.split(" ")[0] || ""} onNavigate={go} onOpenClient={openClient} onOpenProperty={openProperty} />
-      ) : section === "Clients" ? (
-        <ClientsPage view={clientView} setView={setClientView} query={query} setQuery={setQuery} canWrite={canWrite} userId={session.user.id} />
-      ) : section === "Immobles" ? (
+      ) : section === "Clients" ? null : section === "Immobles" ? (
         <PropertiesPage onOpenProperty={openProperty} />
       ) : section === "Alertes" ? (
         <AlertsPage canWrite={canWrite} userId={session.user.id} onOpenClient={openClient} />
