@@ -180,3 +180,14 @@
 .client-results .client-list-row td:nth-child(3){font-weight:700;text-transform:uppercase}
 .client-home-towns{display:flex;flex-direction:column;gap:6px;color:#263b32;font-size:12px}
 .client-home-towns span{white-space:nowrap}
+
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f5f1e7 0%,#e7e0d0 100%)}
+.auth-card{width:min(100%,410px);padding:38px;background:#fffdf7;border:1px solid #ddd5c4;border-radius:18px;box-shadow:0 18px 55px rgba(23,47,41,.12);display:flex;flex-direction:column;gap:16px}
+.auth-card .brand-symbol{margin:0 auto;color:var(--green)}
+.auth-card h1{margin:0;text-align:center;font-size:27px;letter-spacing:-.6px;color:var(--green)}
+.auth-card>p{margin:-12px 0 10px;text-align:center;color:var(--muted)}
+.auth-card .field{display:flex;flex-direction:column;gap:7px}
+.auth-card .field input{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.auth-card .auth-submit{justify-content:center;width:100%;padding:13px;border:0;border-radius:8px}
+.auth-card>small,.auth-loading{color:var(--muted);text-align:center;font-size:12px}
+.auth-submit:disabled{opacity:.65;cursor:wait}
