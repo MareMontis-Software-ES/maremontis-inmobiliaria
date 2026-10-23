@@ -12,6 +12,7 @@ import { Dashboard } from "../modules/dashboard/Dashboard";
 import { ClientsPage, type ClientView } from "../modules/clients/ClientsPage";
 import { PropertiesPage } from "../modules/properties/PropertiesPage";
 import { PendingModule } from "../modules/pending/PendingModule";
+import { mainClientOf } from "../data/finques";
 import { Notice } from "../components/ui";
 import type { Profile, Section } from "../types";
 
@@ -22,7 +23,6 @@ export default function App() {
   const [profileError, setProfileError] = useState("");
   const [section, setSection] = useState<Section>("Inici");
   const [clientView, setClientView] = useState<ClientView>({ mode: "list" });
-  const [propertyId, setPropertyId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [overdue, setOverdue] = useState(0);
 
@@ -51,14 +51,18 @@ export default function App() {
   const go = (s: Section) => {
     setSection(s);
     if (s === "Clients") setClientView({ mode: "list" });
-    if (s === "Immobles") setPropertyId(null);
   };
   const openClient = (id: string) => { setSection("Clients"); setClientView({ mode: "detail", id }); };
-  const openProperty = (id: string) => { setSection("Immobles"); setPropertyId(id); };
+  // Tot gira al voltant del client: una finca s'obre dins la fitxa del seu titular principal
+  const openProperty = async (id: string) => {
+    const clientId = await mainClientOf(id).catch(() => null);
+    if (clientId) { setSection("Clients"); setClientView({ mode: "detail", id: clientId, propertyId: id, tab: "finca" }); }
+    else window.alert("Aquesta finca no té cap titular assignat.");
+  };
 
   const crumb = section === "Clients"
     ? { list: "", detail: "Fitxa del client", new: "Alta de client", edit: "Modificar client" }[clientView.mode]
-    : section === "Immobles" && propertyId ? "Fitxa de l'immoble" : "";
+    : "";
 
   return (
     <Shell section={section} crumb={crumb} profile={profile} email={session.user.email || ""} query={query} overdue={overdue}
@@ -69,9 +73,9 @@ export default function App() {
       {section === "Inici" ? (
         <Dashboard canWrite={canWrite} userName={profile?.full_name?.split(" ")[0] || ""} onNavigate={go} onOpenClient={openClient} onOpenProperty={openProperty} />
       ) : section === "Clients" ? (
-        <ClientsPage view={clientView} setView={setClientView} query={query} setQuery={setQuery} canWrite={canWrite} userId={session.user.id} onOpenProperty={openProperty} />
+        <ClientsPage view={clientView} setView={setClientView} query={query} setQuery={setQuery} canWrite={canWrite} userId={session.user.id} />
       ) : section === "Immobles" ? (
-        <PropertiesPage selectedId={propertyId} setSelectedId={setPropertyId} query="" onOpenClient={openClient} />
+        <PropertiesPage onOpenProperty={openProperty} />
       ) : (
         <PendingModule section={section} />
       )}

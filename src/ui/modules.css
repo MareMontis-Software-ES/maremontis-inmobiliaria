@@ -115,3 +115,51 @@
 @media(max-width:1250px){.detail-layout{grid-template-columns:1fr}.detail-side{position:static}}
 @media(max-width:1300px){.client-filter-row{grid-template-columns:repeat(3,minmax(120px,1fr))}}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr}.phone-line{grid-template-columns:80px 56px 1fr 26px}.phone-line input:nth-child(4){display:none}.vehicle-line{grid-template-columns:1fr 1fr 26px}.vehicle-line input:nth-child(n+3):not(:nth-child(4)){display:none}.client-filter-row{grid-template-columns:1fr 1fr}}
+
+/* --- Fitxa centrada en el client: capçalera amb les seves finques --- */
+.client-banner{grid-template-columns:minmax(300px,.9fr) minmax(0,2fr);min-height:auto}
+.banner-fincas{display:flex;flex-direction:column;gap:8px;min-width:0}
+.banner-fincas-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.banner-fincas-head strong{font-size:13px}
+.banner-add{display:inline-flex;align-items:center;gap:5px;border:1px solid #f4efdf;background:#f4efdf;color:#174c40;border-radius:5px;padding:6px 10px;font-size:12px;font-weight:600}
+.banner-add:hover{background:#fff}
+.banner-fincas-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;max-height:150px;overflow:auto;padding-right:2px}
+.finca-chip{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid #2f6b5c;background:#ffffff14;color:#fff;border-radius:6px;padding:7px 10px;font:inherit;cursor:pointer;min-width:0}
+.finca-chip:hover{background:#ffffff26}
+.finca-chip.on{background:#f4efdf;color:#163b31;border-color:#f4efdf;box-shadow:0 0 0 2px #c28b38}
+.finca-chip.off{opacity:.6;font-style:italic}
+.finca-num{flex:0 0 auto;min-width:34px;height:28px;display:grid;place-items:center;border-radius:4px;background:#c28b38;color:#fff;font-weight:700;font-size:12px}
+.finca-addr{display:flex;flex-direction:column;min-width:0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.finca-addr small{font-weight:400;opacity:.8;font-size:11px}
+.finca-context{display:flex;align-items:center;gap:7px;margin:8px 10px 0;padding:7px 10px;background:#fbf3e3;border:1px solid #ead9b5;border-radius:5px;font-size:12px;color:#5b4a26}
+.finca-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.tab-actions{display:flex;gap:9px;margin-top:12px;padding:10px;background:#eae4d5;border-radius:5px;position:sticky;bottom:0;z-index:4}
+.tab-actions.inline{position:static;background:transparent;padding:10px 0 0}
+.f-locked input,.f-locked select,.f-locked textarea{background:#f6f3ea;border-color:#ebe5d8;color:#1d2f28;cursor:default;opacity:1}
+.f-locked select{appearance:none}
+.pw-wrap{position:relative;display:block}
+.pw-wrap input{padding-right:30px}
+.pw-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#56645b;padding:4px}
+.owner-line{grid-template-columns:minmax(0,1fr) 80px 14px 26px}
+.owner-name{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.add-owner{width:100%;height:32px;border:1px dashed #b7c7bd;border-radius:4px;background:#fffefa;font:inherit;font-size:12px;color:#174c40;margin-top:6px}
+.hint-warn{color:#a64b2b;font-weight:600}
+.year-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:#56645b}
+.year-chip{border:1px solid #d8d0c0;background:#fffdf7;border-radius:15px;padding:5px 12px;font:inherit;font-size:12px;color:#1d2f28}
+.year-chip.on{background:#174c40;border-color:#174c40;color:#fff}
+.year-chip:disabled:not(.on){opacity:.5}
+.calc-box{display:grid;gap:6px;margin-top:10px}
+.calc-box>div{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;background:#f2f6f0;border:1px solid #d6e3d4;border-radius:5px}
+.calc-box span{font-size:12px;color:#405048}
+.calc-box strong{font-size:14px;color:#174c40;text-align:right}
+.calc-box small{grid-column:1/-1;font-size:10px;color:#7b817d}
+.key-status{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px;background:#fffdf7;border:1px solid #e0d8c8;border-radius:6px;color:#174c40}
+.key-status>div{display:flex;flex-direction:column;gap:3px;flex:1;font-size:12px;color:#405048}
+.key-status strong{font-size:14px;color:#174c40}
+.txt-warn{color:#b0391f!important}
+.row-warn td{background:#fdf1ec}
+.client-filter-row.three{grid-template-columns:minmax(220px,2fr) minmax(120px,1fr) minmax(150px,1fr);margin-top:0}
+@media(max-width:1250px){.client-banner{grid-template-columns:1fr}.client-banner .banner-fincas{display:flex}.finca-columns{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.finca-columns{grid-template-columns:1fr}.client-banner .other-properties{display:flex}}
+.tab-actions{position:static;margin:0 0 10px;background:#f0ebdf;border:1px solid #e0d8c8}
+.record-tabs button span{text-transform:none}

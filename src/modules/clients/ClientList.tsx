@@ -10,7 +10,7 @@ interface Props {
   canWrite: boolean;
   loading: boolean;
   onOpen: (id: string) => void;
-  onOpenProperty: (id: string) => void;
+  onOpenProperty: (propertyId: string, clientId: string) => void;
   onNew: () => void;
 }
 
@@ -74,7 +74,7 @@ export function ClientList({ clients, query, setQuery, canWrite, loading, onOpen
                     <td>
                       <div className="client-home-list">
                         {c.properties.length ? c.properties.map(h => (
-                          <button type="button" className="client-home-chip" key={h.id} onClick={e => { e.stopPropagation(); onOpenProperty(h.id); }}>
+                          <button type="button" className="client-home-chip" key={h.id} onClick={e => { e.stopPropagation(); onOpenProperty(h.id, c.id); }}>
                             <House size={17} /><span>{h.address}</span>{h.status === "baixa" && <span className="mini-tag">BAIXA</span>}
                           </button>
                         )) : <span className="client-no-homes">Sense immobles</span>}

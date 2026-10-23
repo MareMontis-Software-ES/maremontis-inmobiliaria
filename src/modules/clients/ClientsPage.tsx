@@ -5,11 +5,15 @@ import { listResponsibles } from "../../data/lookups";
 import { errorText } from "../../lib/supabase";
 import { Notice } from "../../components/ui";
 import { ClientList } from "./ClientList";
-import { ClientDetail } from "./ClientDetail";
+import { ClientDetail, type ClientTab } from "./ClientDetail";
 import { ClientForm } from "./ClientForm";
 import type { ClientFull, ClientSummary, Profile, PropertyLink } from "../../types";
 
-export type ClientView = { mode: "list" } | { mode: "detail"; id: string } | { mode: "new" } | { mode: "edit"; id: string };
+export type ClientView =
+  | { mode: "list" }
+  | { mode: "detail"; id: string; propertyId?: string | null | "new"; tab?: ClientTab }
+  | { mode: "new" }
+  | { mode: "edit"; id: string };
 
 interface Props {
   view: ClientView;
@@ -18,10 +22,9 @@ interface Props {
   setQuery: (q: string) => void;
   canWrite: boolean;
   userId?: string;
-  onOpenProperty: (id: string) => void;
 }
 
-export function ClientsPage({ view, setView, query, setQuery, canWrite, userId, onOpenProperty }: Props) {
+export function ClientsPage({ view, setView, query, setQuery, canWrite, userId }: Props) {
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState("");
@@ -62,9 +65,11 @@ export function ClientsPage({ view, setView, query, setQuery, canWrite, userId, 
         setError(`El codi ${full.client.client_code} ja està assignat a un altre client.`);
         return;
       }
+      const isNew = !full.client.id;
       const id = await saveClient(full);
       await reloadList();
-      setView({ mode: "detail", id });
+      // Client nou → directament a l'alta de la seva primera finca
+      setView(isNew ? { mode: "detail", id, tab: "finca", propertyId: "new" } : { mode: "detail", id });
     } catch (e) {
       setError("No s'ha pogut desar. " + errorText(e));
     } finally { setSaving(false); }
@@ -87,7 +92,9 @@ export function ClientsPage({ view, setView, query, setQuery, canWrite, userId, 
     return <>
       {listError && <div className="work-area"><Notice kind="error">No s'han pogut carregar els clients: {listError}</Notice></div>}
       <ClientList clients={clients} query={query} setQuery={setQuery} canWrite={canWrite} loading={loading}
-        onOpen={id => setView({ mode: "detail", id })} onOpenProperty={onOpenProperty} onNew={() => setView({ mode: "new" })} />
+        onOpen={id => setView({ mode: "detail", id })}
+        onOpenProperty={(pid, cid) => setView({ mode: "detail", id: cid, propertyId: pid, tab: "finca" })}
+        onNew={() => setView({ mode: "new" })} />
     </>;
   }
 
@@ -105,16 +112,28 @@ export function ClientsPage({ view, setView, query, setQuery, canWrite, userId, 
   // Fitxa
   if (!current) return <div className="work-area list-view">{error ? <Notice kind="error">{error}</Notice> : <p className="empty-line">Carregant fitxa…</p>}</div>;
   const index = clients.findIndex(c => c.id === view.id);
+  const firstFinca = current.properties.find(h => h.status === "active")?.id ?? current.properties[0]?.id ?? null;
+  const propertyId = view.propertyId !== undefined ? view.propertyId : firstFinca;
+  const tab: ClientTab = view.tab ?? "client";
+  const go = (patch: Partial<{ propertyId: string | null | "new"; tab: ClientTab }>) =>
+    setView({ mode: "detail", id: view.id, propertyId, tab, ...patch });
   return (
     <ClientDetail
       full={current.full} properties={current.properties} responsibles={responsibles} canWrite={canWrite} userId={userId}
       position={{ index, total: clients.length }} error={error}
+      tab={tab} propertyId={propertyId}
+      onTab={t => go({ tab: t })}
+      onSelectProperty={id => go({ propertyId: id, tab: id === "new" ? "finca" : tab === "client" || tab === "conjuge" || tab === "matricules" ? "finca" : tab })}
+      onPropertySaved={async id => {
+        try { setCurrent(await getClient(view.id)); } catch (e) { setError(errorText(e)); }
+        void reloadList();
+        go({ propertyId: id, tab: "finca" });
+      }}
       onEdit={() => setView({ mode: "edit", id: view.id })}
       onToggleStatus={toggleStatus}
-      onPrev={() => index > 0 && setView({ mode: "detail", id: clients[index - 1].id })}
-      onNext={() => index < clients.length - 1 && setView({ mode: "detail", id: clients[index + 1].id })}
+      onPrev={() => index > 0 && setView({ mode: "detail", id: clients[index - 1].id, tab })}
+      onNext={() => index < clients.length - 1 && setView({ mode: "detail", id: clients[index + 1].id, tab })}
       onBack={() => setView({ mode: "list" })}
-      onOpenProperty={onOpenProperty}
     />
   );
 }

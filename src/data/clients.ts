@@ -55,7 +55,9 @@ function propertyLinks(rows: Row[] | null | undefined): PropertyLink[] {
       municipality: s(o.properties.municipality),
       status: s(o.properties.status),
       ownership_percentage: o.ownership_percentage,
-    }));
+    }))
+    // Actives primer, després per número d'administració
+    .sort((a, b) => Number(a.status === "baixa") - Number(b.status === "baixa") || a.admin_number - b.admin_number);
 }
 
 export async function listClients(): Promise<ClientSummary[]> {
