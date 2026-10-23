@@ -10,6 +10,8 @@ import { AlertsPanel } from "../alerts/AlertsPanel";
 import { FincaTab } from "../finques/FincaTab";
 import { TaxesTab } from "../finques/TaxesTab";
 import { KeysTab } from "../finques/KeysTab";
+import { CaseView } from "../cases/CaseView";
+import { IncidentsView } from "../incidents/IncidentsView";
 import type { ClientFull, Profile, PropertyLink } from "../../types";
 
 export const CLIENT_TABS = [
@@ -20,7 +22,7 @@ export const CLIENT_TABS = [
   ["conjuge", "Cònjuge - copropietaris", Users, false],
   ["matricules", "Matrícules", Car, false],
   ["revisions", "Revisions", CalendarDays, true],
-  ["incidencies", "Incidències", AlertTriangle, true],
+  ["incidencies", "Incidències", AlertTriangle, false],
 ] as const;
 export type ClientTab = typeof CLIENT_TABS[number][0];
 
@@ -51,7 +53,7 @@ export function ClientDetail(p: Props) {
   const responsible = p.responsibles.find(r => r.id === c.responsible_id);
   const addressLine = [a.street_type, a.street_name, a.street_number].filter(Boolean).join(" ");
   const finca = p.propertyId && p.propertyId !== "new" ? p.properties.find(h => h.id === p.propertyId) || null : null;
-  const fincaTabs: ClientTab[] = ["finca", "impostos", "claus", "revisions", "incidencies"];
+  const fincaTabs: ClientTab[] = ["finca", "impostos", "claus", "revisions"];
   const needsFinca = fincaTabs.includes(p.tab);
 
   return (
@@ -115,10 +117,11 @@ export function ClientDetail(p: Props) {
           ) : p.tab === "claus" ? (
             p.propertyId === "new" ? <div className="tab-pad"><Empty>Grava primer la finca nova.</Empty></div>
               : <KeysTab propertyId={finca!.id} keyOffice="" canWrite={p.canWrite} userId={p.userId} />
-          ) : p.tab === "revisions" || p.tab === "incidencies" ? (
-            <div className="tab-pad"><Panel title={p.tab === "revisions" ? "Revisions de la finca" : "Incidències de la finca"} icon={p.tab === "revisions" ? CalendarDays : AlertTriangle}>
-              <Empty>Aquesta pestanya es desenvoluparà a la {p.tab === "revisions" ? "fase 4 (control de cases)" : "fase 5 (incidències i notes de servei)"}.</Empty>
-            </Panel></div>
+          ) : p.tab === "revisions" ? (
+            p.propertyId === "new" ? <div className="tab-pad"><Empty>Grava primer la finca nova.</Empty></div>
+              : <div className="tab-pad"><CaseView propertyId={finca!.id} canWrite={p.canWrite} userId={p.userId || ""} /></div>
+          ) : p.tab === "incidencies" ? (
+            <div className="tab-pad"><IncidentsView canWrite={p.canWrite} userId={p.userId || ""} clientId={c.id} propertyId={finca?.id || null} /></div>
           ) : p.tab === "client" ? (
             <ClientData full={p.full} addressLine={addressLine} />
           ) : p.tab === "conjuge" ? (

@@ -7,13 +7,13 @@ const NAV: [Section, any, boolean][] = [
   ["Inici", House, false],
   ["Clients", UserRound, false],
   ["Immobles", Building2, false],
-  ["Alertes", Bell, true],
-  ["Claus", KeyRound, true],
-  ["Incidències", AlertTriangle, true],
-  ["Revisions", CalendarDays, true],
-  ["Contractes", FileText, true],
-  ["Industrials", Wrench, true],
-  ["Impostos", Landmark, true],
+  ["Alertes", Bell, false],
+  ["Claus", KeyRound, false],
+  ["Incidències", AlertTriangle, false],
+  ["Revisions", CalendarDays, false],
+  ["Contractes", FileText, false],
+  ["Industrials", Wrench, false],
+  ["Impostos", Landmark, false],
 ];
 
 const ROLE_LABEL = { admin: "Administrador", oficina: "Oficina", consulta: "Només consulta" };
@@ -44,7 +44,7 @@ export function Shell({ section, crumb, profile, email, query, overdue, onNaviga
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <button className={"nav-item pending " + (section === "Configuració" ? "active" : "")} onClick={() => onNavigate("Configuració")}><Settings size={22} /><span>Configuració</span></button>
+          <button className={"nav-item " + (section === "Configuració" ? "active" : "")} onClick={() => onNavigate("Configuració")}><Settings size={22} /><span>Configuració</span></button>
           <div className="user-profile">
             <div className="user-icon"><Users size={19} /></div>
             <div><strong>{profile?.full_name || email}</strong><small>{profile ? ROLE_LABEL[profile.role] : "Sense perfil"}</small></div>

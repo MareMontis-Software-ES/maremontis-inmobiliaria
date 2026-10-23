@@ -47,14 +47,4 @@ Regla per continuar: **un mòdul nou = una carpeta a `src/modules/` + un fitxer 
 
 ## Estat
 
-| Fase | Mòdul | Estat |
-|---|---|---|
-| 1 | Base de dades completa + seguretat per rols | ✅ |
-| 2a | Clients: alta, modificació, baixa lògica, varis telèfons/e-mails, cònjuge i copropietaris, matrícules, ruta documental, responsable | ✅ |
-| 2a | Alertes del client (data de gestió, checklist, històric 6 mesos, caducitat de passaports i aniversaris automàtics) | ✅ |
-| 2b | Immobles: alta amb núm. d'administració reutilitzable, titulars amb %, fitxa completa | ⏳ |
-| 3 | Tipus de contracte | ⏳ |
-| 4 | Revisions / control de cases | ⏳ |
-| 5 | Claus, incidències, notes de servei, industrials | ⏳ |
-| 6 | Impostos, model 210, NRC, exportació comptable (dBase/ODBC) | ⏳ |
-| 7 | Configuració, permisos a la interfície, estadístiques | ⏳ |
+Veure **docs/ESTAT_RESPECTE_PDF.md**: comparació pantalla per pantalla amb el programa antic i les anotacions dels PDF, i què falta.

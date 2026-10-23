@@ -6,6 +6,7 @@ import { dashboardCounts, recentProperties } from "../../data/properties";
 import { errorText } from "../../lib/supabase";
 import { addDaysISO, fmtDate, todayISO } from "../../lib/format";
 import { Notice } from "../../components/ui";
+import { listCases, type CaseRow } from "../../data/cases";
 import type { Alert, Section } from "../../types";
 
 interface Props {
@@ -23,6 +24,7 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
   const [counts, setCounts] = useState<Awaited<ReturnType<typeof dashboardCounts>> | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [recent, setRecent] = useState<Awaited<ReturnType<typeof recentProperties>>>([]);
+  const [cases, setCases] = useState<CaseRow[]>([]);
   const [error, setError] = useState("");
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
 
@@ -32,6 +34,7 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
         if (canWrite) await generateAutomaticAlerts().catch(() => 0);
         const [c, a, r] = await Promise.all([dashboardCounts(), listAlerts({ onlyPending: true }), recentProperties()]);
         setCounts(c); setAlerts(a); setRecent(r);
+        listCases().then(setCases).catch(() => {});
       } catch (e) { setError(errorText(e)); }
     })();
   }, [canWrite]);
@@ -51,13 +54,14 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
   const isoOf = (d: number) => `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
   const n = (v?: number) => (counts ? String(v ?? 0) : "…");
+  const revDue = cases.filter(c => c.next && c.next.date <= addDaysISO(today, 15)).sort((a, b) => a.next!.date.localeCompare(b.next!.date));
   const stats: [any, string, string, string, Section][] = [
     [Building2, n(counts?.properties), "Immobles", "actius", "Immobles"],
     [Users, n(counts?.clients), "Clients", "actius", "Clients"],
     [Bell, n(counts?.alerts), "Alertes", `${counts?.overdue ?? 0} vençudes`, "Alertes"],
     [KeyRound, n(counts?.keys), "Claus", "fora d'oficina", "Claus"],
     [AlertTriangle, n(counts?.incidents), "Incidències", "obertes", "Incidències"],
-    [CalendarDays, "—", "Revisions", "fase 4", "Revisions"],
+    [CalendarDays, counts ? String(revDue.length) : "…", "Revisions", "pendents (15 dies)", "Revisions"],
   ];
 
   return (
@@ -146,9 +150,12 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
             {todays.map(a => <div className="agenda-row" key={a.id}><time>·</time><div><strong>{a.title}</strong><small>{a.client_name}</small></div></div>)}
           </section>
           <section className="due-panel">
-            <header><strong>Pendent de desenvolupar</strong></header>
-            {[[Wrench, "Revisions i control de cases", "Fase 4"], [AlertTriangle, "Incidències i notes de servei", "Fase 5"], [FileText, "Model 210 i NRC", "Fase 6"]].map(([Icon, t, f]: any) => (
-              <div className="due-row" key={t}><Icon size={20} /><div><strong>{t}</strong><small>{f}</small></div><time /></div>
+            <header><strong>Revisions a fer</strong><button onClick={() => onNavigate("Revisions")}>Veure totes →</button></header>
+            {!revDue.length && <p className="empty-line pad">Cap revisió pendent els pròxims 15 dies.</p>}
+            {revDue.slice(0, 6).map(c => (
+              <button className="due-row as-button" key={c.id} onClick={() => onOpenProperty(c.id)}>
+                <Wrench size={20} /><div><strong>{c.address}</strong><small>{c.client_name}</small></div><time className={c.next!.overdue ? "txt-warn" : ""}>{fmtDate(c.next!.date)}</time>
+              </button>
             ))}
           </section>
         </aside>

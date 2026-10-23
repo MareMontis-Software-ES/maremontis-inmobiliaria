@@ -11,7 +11,11 @@ import { Shell } from "../modules/layout/Shell";
 import { Dashboard } from "../modules/dashboard/Dashboard";
 import { ClientsPage, type ClientView } from "../modules/clients/ClientsPage";
 import { PropertiesPage } from "../modules/properties/PropertiesPage";
-import { PendingModule } from "../modules/pending/PendingModule";
+import { AlertsPage, KeysPage } from "../modules/alerts/GlobalPages";
+import { ContractsPage, IndustrialsPage, ConfigPage } from "../modules/admin/AdminPages";
+import { CasesPage } from "../modules/cases/CasesPage";
+import { TaxesPage } from "../modules/taxes/TaxesPage";
+import { IncidentsView } from "../modules/incidents/IncidentsView";
 import { mainClientOf } from "../data/finques";
 import { Notice } from "../components/ui";
 import type { Profile, Section } from "../types";
@@ -76,8 +80,25 @@ export default function App() {
         <ClientsPage view={clientView} setView={setClientView} query={query} setQuery={setQuery} canWrite={canWrite} userId={session.user.id} />
       ) : section === "Immobles" ? (
         <PropertiesPage onOpenProperty={openProperty} />
+      ) : section === "Alertes" ? (
+        <AlertsPage canWrite={canWrite} userId={session.user.id} onOpenClient={openClient} />
+      ) : section === "Claus" ? (
+        <KeysPage canWrite={canWrite} userId={session.user.id} onOpenClient={openClient} />
+      ) : section === "Incidències" ? (
+        <div className="work-area list-view">
+          <div className="page-title"><div><small>SEGUIMENT</small><h1>Incidències</h1><p>Anotacions de tot tipus vinculades a client, finca i industrial. Les que cal gestionar poden generar notes de servei (sense facturació).</p></div></div>
+          <IncidentsView canWrite={canWrite} userId={session.user.id} onOpenClient={openClient} />
+        </div>
+      ) : section === "Revisions" ? (
+        <CasesPage canWrite={canWrite} userId={session.user.id} onOpenClient={openClient} />
+      ) : section === "Contractes" ? (
+        <ContractsPage canWrite={profile?.role === "admin"} />
+      ) : section === "Industrials" ? (
+        <IndustrialsPage canWrite={canWrite} />
+      ) : section === "Impostos" ? (
+        <TaxesPage canWrite={canWrite} onOpenProperty={openProperty} />
       ) : (
-        <PendingModule section={section} />
+        <ConfigPage isAdmin={profile?.role === "admin"} />
       )}
     </Shell>
   );
