@@ -1,1 +1,7 @@
-node_modules\ndist\nrelease\n.env\n.env.*\n!.env.example\n.DS_Store\n
+node_modules
+dist
+release
+.env
+.env.*
+!.env.example
+.DS_Store

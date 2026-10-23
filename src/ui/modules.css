@@ -1,0 +1,117 @@
+/* Estils dels mòduls nous (formularis controlats, fitxa, alertes). Reutilitzen la paleta de styles.css. */
+
+/* --- Camps de formulari --- */
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 11px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0;color:#314037;font-size:12px}
+.f-wide{grid-column:1/-1}
+.f input,.f select,.f textarea{width:100%;min-width:0;height:34px;padding:5px 8px;border:1px solid #ded7cb;border-radius:4px;background:#faf8f2;color:#25352d;font:inherit;font-size:12px}
+.f textarea{height:auto;resize:vertical}
+.f input[readonly]{background:#eee9dc;color:#56645b}
+.f-error input,.f-error select{border-color:#c4462f;background:#fdf1ec}
+.f small{color:#b0391f;font-size:11px}
+.f .req{color:#b0391f;margin-left:2px}
+.f-check{flex-direction:row;align-items:center;gap:8px;height:34px;align-self:end}
+.f-check input{width:16px;height:16px}
+.hint{margin:8px 0 0;color:#6c766e;font-size:11px}
+.hint code,.path{background:#f0ece1;padding:1px 5px;border-radius:3px;font-size:11px}
+
+/* Files de llistes (telèfons, e-mails, vehicles) */
+.row-line{display:grid;gap:6px;align-items:center;margin-bottom:6px}
+.row-line input,.row-line select{width:100%;min-width:0;height:32px;padding:4px 7px;border:1px solid #ded7cb;border-radius:4px;background:#faf8f2;font:inherit;font-size:12px}
+.phone-line{grid-template-columns:92px 62px minmax(90px,1fr) minmax(70px,.8fr) 26px}
+.email-line{grid-template-columns:100px minmax(120px,1fr) 26px}
+.rel-phone-line{grid-template-columns:90px 60px minmax(90px,1fr) 26px}
+.vehicle-line{grid-template-columns:1fr 1fr 1fr 1fr 140px 26px}
+.row-head span{font-size:11px;color:#56645b}
+.row-line.has-error input[type=email]{border-color:#c4462f;background:#fdf1ec}
+.icon-del{border:0;background:transparent;color:#c4462f;display:grid;place-items:center;padding:4px;border-radius:4px}
+.icon-del:hover{background:#f8e4d6}
+.link-btn{border:0;background:transparent;color:#174c40;font-size:11px;padding:2px 0;text-decoration:underline;display:inline-flex;align-items:center;gap:4px}
+.h3-actions{margin-left:auto;display:flex;gap:6px}
+
+/* Cònjuge / copropietaris */
+.related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.related-card{border:1px solid #e3dccd;border-radius:6px;background:#fffefa;padding:10px 12px}
+.related-card>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;color:#174c40}
+.sub-list{margin-top:10px;border-top:1px dashed #ddd5c4;padding-top:8px}
+.sub-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;color:#314037;margin:6px 0}
+
+.sticky-actions{position:sticky;bottom:0;z-index:5;justify-content:flex-end;box-shadow:0 -2px 8px #1a352715}
+.save-btn:disabled,.cancel-btn:disabled{opacity:.55;cursor:not-allowed}
+
+/* --- Avisos --- */
+.notice{display:flex;gap:9px;align-items:flex-start;padding:10px 12px;border-radius:5px;font-size:12px;margin:8px 0}
+.notice svg{flex-shrink:0;margin-top:1px}
+.notice-info{background:#e9f0e7;color:#2d5240;border:1px solid #cddcc9}
+.notice-error{background:#fbe9e2;color:#8e2f1b;border:1px solid #efc6b6}
+.notice-ok{background:#e3f1e6;color:#21573b;border:1px solid #bfdcc6}
+.empty-line{color:#7b817d;font-style:italic;font-size:12px;margin:4px 0}
+.empty-line.pad{padding:10px 12px}
+.table-empty{text-align:center;color:#7b817d;font-style:italic;padding:28px!important;white-space:normal}
+.client-results tbody tr.no-hover{cursor:default;background:#fffdf8!important}
+
+/* --- Fitxa: vista de lectura --- */
+.info-row{display:grid;grid-template-columns:minmax(95px,38%) minmax(0,1fr);gap:8px;padding:6px 2px;border-bottom:1px solid #f0eadf;font-size:12px}
+.info-row:last-child{border-bottom:0}
+.info-row>span{color:#59645c}
+.info-row>strong{font-weight:500;color:#1b2f28;overflow-wrap:anywhere}
+.info-row em{color:#a3a69c;font-style:normal}
+.muted{color:#7b817d;font-weight:400}
+.obs-box{margin-top:8px;padding:8px 10px;background:#f7f3e9;border:1px solid #e6dfd1;border-radius:4px;white-space:pre-wrap;font-size:12px;min-height:50px}
+.record-state.state-off{background:#b0503a}
+.mini-tag{display:inline-block;background:#b0503a;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;margin-right:6px}
+.banner-empty{color:#d7e3dc;font-style:italic;text-align:center;font-size:12px}
+.other-properties .property-choice small{opacity:.7;margin-left:4px}
+.row-off td{opacity:.6}
+.pos-label{align-self:center;font-size:12px;color:#56645b;padding:0 4px}
+
+.detail-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;align-items:start;flex:1}
+.detail-main{min-width:0;display:flex;flex-direction:column}
+.detail-side{padding-top:8px;position:sticky;top:8px}
+.tab-pad{padding:12px 10px}
+.mini-table{width:100%;border-collapse:collapse}
+.mini-table th{background:#f0ede5;padding:8px 10px;font-size:11px;text-align:left}
+.mini-table td{padding:8px 10px;border-top:1px solid #eee7d9;font-size:12px;white-space:nowrap}
+.mini-table tbody tr{cursor:pointer}
+.mini-table tbody tr:hover{background:#f0f6ef}
+
+/* --- Alertes --- */
+.alerts-panel .data-panel-title .count-pill{margin-left:0}
+.alert-item{border:1px solid #e6dfd1;border-left:4px solid #b9a875;border-radius:5px;padding:8px 10px;margin-bottom:8px;background:#fffefa}
+.alert-item.overdue{border-left-color:#c4462f;background:#fdf5f1}
+.alert-item.completed{opacity:.7;border-left-color:#7fa58c}
+.alert-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.alert-item-head strong{font-size:12px}
+.alert-item-head time{font-size:11px;color:#7b817d;white-space:nowrap}
+.alert-item p{margin:6px 0;font-size:12px;color:#405048;white-space:pre-wrap}
+.alert-date{height:26px;border:1px solid #ddd5c4;border-radius:4px;background:#faf8f2;font-size:11px;padding:2px 4px}
+.checklist{list-style:none;margin:6px 0;padding:0}
+.checklist li{font-size:12px;margin:3px 0}
+.checklist label{display:flex;gap:6px;align-items:center}
+.checklist .done{text-decoration:line-through;color:#8a8f86}
+.outline-btn.small{padding:5px 9px;font-size:11px;margin-top:4px}
+.alert-new{display:grid;gap:6px;margin-bottom:10px;padding:8px;border:1px dashed #cfc7b8;border-radius:5px}
+.alert-new input,.alert-new textarea{width:100%;border:1px solid #ddd5c4;border-radius:4px;background:#faf8f2;padding:6px 8px;font:inherit;font-size:12px}
+.alert-new label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#56645b}
+.alert-new-actions{display:flex;gap:6px;justify-content:flex-end}
+
+/* --- Inici --- */
+.as-button{width:100%;border:0;background:transparent;text-align:left;cursor:pointer;font:inherit}
+.as-button:hover{background:#f6f1e5}
+.calendar-grid span.has-due{position:relative;font-weight:700;color:#a64b2b}
+.calendar-grid span.has-due:after{content:"";position:absolute;bottom:-3px;width:4px;height:4px;border-radius:50%;background:#c4462f}
+.calendar-grid span.today.has-due{color:#fff}
+
+/* --- Menú: mòduls pendents --- */
+.nav-item.pending span:after{content:"·";margin-left:6px;color:#c28b38;font-weight:700}
+.pending-panel ul{margin:0;padding-left:18px;display:grid;gap:7px;font-size:13px;color:#2a3d34}
+
+/* --- Filtres --- */
+.filter-input{height:39px;min-width:0;width:100%;border:1px solid #d9d2c5;border-radius:5px;padding:0 10px;background:#f8f5ed;font:inherit}
+.client-filter-row{grid-template-columns:minmax(160px,1.4fr) repeat(4,minmax(110px,1fr)) auto}
+.client-filter-row.two{grid-template-columns:minmax(200px,2fr) minmax(150px,1fr);margin-top:0}
+.client-results tbody tr:first-child{background:#fffdf8}
+
+@media(max-width:1250px){.detail-layout{grid-template-columns:1fr}.detail-side{position:static}}
+@media(max-width:1300px){.client-filter-row{grid-template-columns:repeat(3,minmax(120px,1fr))}}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}.phone-line{grid-template-columns:80px 56px 1fr 26px}.phone-line input:nth-child(4){display:none}.vehicle-line{grid-template-columns:1fr 1fr 26px}.vehicle-line input:nth-child(n+3):not(:nth-child(4)){display:none}.client-filter-row{grid-template-columns:1fr 1fr}}
