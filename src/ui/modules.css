@@ -378,3 +378,9 @@
 .gs-empty{padding:12px;color:#69736b}
 .gs-all{display:block;width:100%;border:0;border-top:1px solid #eee6d6;background:transparent;padding:9px 12px;text-align:left;color:#174c40;font:inherit;font-size:12px;text-decoration:underline}
 @media(max-width:520px){.global-search-wrap{order:3;flex-basis:100%;max-width:none}}
+
+/* --- Avís de duplicats --- */
+.dup-warning{display:flex;gap:10px;align-items:flex-start;border:1px solid #d79a2b;background:#fff6e3;color:#5b3d06;border-radius:6px;padding:10px 12px;margin:8px 0}
+.dup-warning svg{flex:0 0 auto;color:#c47d0e;margin-top:2px}
+.dup-warning ul{margin:6px 0;padding-left:18px}
+.dup-warning small{color:#7a5a20}

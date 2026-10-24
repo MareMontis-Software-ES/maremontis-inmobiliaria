@@ -22,6 +22,7 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Buscador general (barra de dalt) | — (millora nova) | Busca a la vegada clients (nom, codi, 430…, DNI/NIE/passaport, telèfon, e-mail), finques (adreça, nom AEAT, núm. d'administració), matrícules i cònjuges/copropietaris; sense tenir en compte accents. Resultats agrupats; en triar-ne un s'obre directament la fitxa (la finca dins la fitxa del titular; la matrícula i el cònjuge a la seva pestanya). Fletxes + Enter. Funció `global_search` (respecta els permisos) | ✅ |
 | Alta client | Responsable assignat; tipus de via desplegable; varis telèfons (tipus, prefix) i e-mails (tipus); codi sense 430 | Tot inclòs; subcompte 430 automàtic; validació DNI/NIE | ✅ |
 | Alta client | Camp «Documental» (ruta) | Inclòs | ✅ |
+| Avís de duplicats (alta/modificació de client) | — (millora nova) | Mentre s'escriu i en gravar, avisa si un altre client té el mateix DNI, NIE o passaport (es comparen entre ells, sense espais ni guions), telèfon (només xifres, sense prefix) o e-mail. No bloqueja: demana confirmació. Funció `find_client_duplicates` | ✅ |
 | Alta immoble | Núm. administració = armari de claus; en donar de baixa queda lliure | Proposa el primer número lliure; avisa si està ocupat; reutilitza els de baixes | ✅ |
 | Alta immoble | Quina oficina té la clau; tipus via + adreça; treure data | Inclòs | ✅ |
 | Dades generals (client) | Adreça de correspondència ratllada | Eliminada | ❌ |
