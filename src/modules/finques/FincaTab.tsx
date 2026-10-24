@@ -10,6 +10,7 @@ import { fmtDate } from "../../lib/format";
 import { adminNumberTaken, clientPickList, getProperty, lookups, nextFreeAdminNumber, propertyGroups, saveProperty, setPropertyBaixa, type Owner, type PropertyForm } from "../../data/finques";
 import type { ClientFull } from "../../types";
 import { recoverProperty } from "../../data/baixes";
+import { HistoryButton } from "../../components/HistoryButton";
 
 const ICONS: Record<string, any> = { ident: Building2, aeat: FileText, contracte: FileText, subministraments: Gauge, serveis: Wifi, certificats: Shield, manteniment: Leaf, obs: FileText };
 
@@ -123,8 +124,10 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
             <>
               <button className="save-btn" onClick={() => setEditing(true)}><Pencil size={16} /> Modificar finca</button>
               <button className="cancel-btn" onClick={toggleBaixa}><Power size={16} /> {form.status === "baixa" ? "Recuperar finca" : "Donar de baixa la finca"}</button>
+              {form.id && <HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.admin_number} ${form.address}`} />}
             </>
           )}
+      {!canWrite && form.id && <div className="tab-actions"><HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.admin_number} ${form.address}`} /></div>}
       {form.status === "baixa" && <Notice kind="error">Finca <strong>donada de baixa</strong> el {fmtDate(form.baixa_date)}. Es conserva per a l'històric i el model 210.</Notice>}
       {isNew && <Notice>Alta de finca nova per a aquest client. El núm. d'administració proposat és el primer armari lliure.</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
