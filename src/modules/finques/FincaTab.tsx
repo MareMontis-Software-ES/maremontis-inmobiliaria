@@ -9,6 +9,7 @@ import { errorText } from "../../lib/supabase";
 import { fmtDate } from "../../lib/format";
 import { adminNumberTaken, clientPickList, getProperty, lookups, nextFreeAdminNumber, propertyGroups, saveProperty, setPropertyBaixa, type Owner, type PropertyForm } from "../../data/finques";
 import type { ClientFull } from "../../types";
+import { recoverProperty } from "../../data/baixes";
 
 const ICONS: Record<string, any> = { ident: Building2, aeat: FileText, contracte: FileText, subministraments: Gauge, serveis: Wifi, certificats: Shield, manteniment: Leaf, obs: FileText };
 
@@ -92,13 +93,9 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
         await setPropertyBaixa(form.id, true, userId);
       } else {
         const used = await adminNumberTaken(Number(form.admin_number), form.id);
-        let newNum: number | undefined;
-        if (used) {
-          const free = await nextFreeAdminNumber();
-          if (!window.confirm(`El número ${form.admin_number} ara l'usa «${used}». Es recuperarà la finca amb el número lliure ${free}. Continuar?`)) return;
-          newNum = Number(free);
-        }
-        await setPropertyBaixa(form.id, false, userId, newNum);
+        if (used && !window.confirm(`El número ${form.admin_number} ara l'usa «${used}». Es recuperarà la finca amb el primer número lliure. Continuar?`)) return;
+        const n = await recoverProperty(form.id, null);
+        if (used) window.alert(`Finca recuperada amb el núm. d'administració ${n}.`);
       }
       onSaved(form.id);
     } catch (e) { setError(errorText(e)); }

@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, Bell, Building2, CalendarDays, ChevronRight, FileText, House, KeyRound, Landmark, LogOut, Search, Settings, UserRound, Users, Wrench } from "lucide-react";
+import { AlertTriangle, Bell, Building2, CalendarDays, ChevronRight, FileText, House, KeyRound, Landmark, LogOut, Settings, UserRound, Users, Wrench } from "lucide-react";
 import type { Profile, Section } from "../../types";
+import type { SearchHit } from "../../data/search";
+import { GlobalSearch } from "./GlobalSearch";
 
 // Menú lateral. Els mòduls marcats amb «pending» encara no estan desenvolupats.
 const NAV: [Section, any, boolean][] = [
@@ -27,11 +29,12 @@ interface Props {
   overdue: number;
   onNavigate: (s: Section) => void;
   onSearch: (q: string) => void;
+  onPick: (h: SearchHit) => void;
   onLogout: () => void;
   children: ReactNode;
 }
 
-export function Shell({ section, crumb, profile, email, query, overdue, onNavigate, onSearch, onLogout, children }: Props) {
+export function Shell({ section, crumb, profile, email, overdue, onNavigate, onSearch, onPick, onLogout, children }: Props) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -54,7 +57,7 @@ export function Shell({ section, crumb, profile, email, query, overdue, onNaviga
       <main className="main-area">
         <div className="topbar">
           <div className="breadcrumb">{section}{crumb && <><ChevronRight size={14} /><span>{crumb}</span></>}</div>
-          <label className="global-search"><Search size={19} /><input placeholder="Buscar clients (codi, nom, DNI, telèfon…)" value={query} onChange={e => onSearch(e.target.value)} /></label>
+          <GlobalSearch onPick={onPick} onSearchClients={onSearch} />
           <div className="top-actions">
             <button aria-label="Alertes vençudes" title="Alertes vençudes" onClick={() => onNavigate("Inici")}><Bell size={22} />{overdue > 0 && <i>{overdue}</i>}</button>
             <button aria-label="Sortir" title="Tancar sessió" onClick={onLogout}><LogOut size={22} /></button>
