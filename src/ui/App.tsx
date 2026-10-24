@@ -77,7 +77,7 @@ export default function App() {
       {section === "Inici" ? (
         <Dashboard canWrite={canWrite} userName={profile?.full_name?.split(" ")[0] || ""} onNavigate={go} onOpenClient={openClient} onOpenProperty={openProperty} />
       ) : section === "Clients" ? null : section === "Immobles" ? (
-        <PropertiesPage onOpenProperty={openProperty} />
+        <PropertiesPage onOpenProperty={openProperty} canWrite={canWrite} />
       ) : section === "Alertes" ? (
         <AlertsPage canWrite={canWrite} userId={session.user.id} onOpenClient={openClient} />
       ) : section === "Claus" ? (

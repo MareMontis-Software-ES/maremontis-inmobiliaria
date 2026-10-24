@@ -6,11 +6,12 @@ import { listProperties, type PropertyRow } from "../../data/properties";
 import { errorText } from "../../lib/supabase";
 import { fmtDate } from "../../lib/format";
 import { Notice } from "../../components/ui";
+import { BaixesView } from "./BaixesView";
 
 const norm = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const USE: Record<string, string> = { turistic: "Turístic", urba: "Urbà" };
 
-export function PropertiesPage({ onOpenProperty }: { onOpenProperty: (id: string) => void }) {
+export function PropertiesPage({ onOpenProperty, canWrite }: { onOpenProperty: (id: string) => void; canWrite: boolean }) {
   const [rows, setRows] = useState<PropertyRow[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -29,12 +30,16 @@ export function PropertiesPage({ onOpenProperty }: { onOpenProperty: (id: string
     <div className="work-area list-view">
       <div className="page-title"><div><small>GESTIÓ IMMOBILIÀRIA</small><h1>Immobles</h1><p>Cercador de finques. En obrir-ne una, es mostra dins la fitxa del seu titular.</p></div></div>
       {error && <Notice kind="error">{error}</Notice>}
+      <div className="filter-bar">
+        {([["active", "Finques actives"], ["baixa", "Històric de baixes"], ["", "Totes"]] as const).map(([k, l]) =>
+          <button key={k} className={"year-chip" + (status === k ? " on" : "")} onClick={() => setStatus(k)}>{l}</button>)}
+      </div>
+      {status === "baixa" ? <section className="client-search-page"><BaixesView canWrite={canWrite} onOpenProperty={onOpenProperty} /></section> : (
       <section className="client-search-page">
         <div className="client-search-tools">
-          <div className="client-filter-row three">
+          <div className="client-filter-row">
             <label>Cerca<input className="filter-input" autoFocus placeholder="Adreça, núm. adm., titular…" value={q} onChange={e => setQ(e.target.value)} /></label>
             <label>Zona<select value={zone} onChange={e => setZone(e.target.value)}><option value="">Totes</option>{zones.map(z => <option key={z!} value={String(z)}>{z}</option>)}</select></label>
-            <label>Estat<select value={status} onChange={e => setStatus(e.target.value)}><option value="active">Actives</option><option value="baixa">Històric de baixes</option><option value="">Totes</option></select></label>
           </div>
         </div>
         <section className="data-panel client-results">
@@ -53,7 +58,7 @@ export function PropertiesPage({ onOpenProperty }: { onOpenProperty: (id: string
           </table></div>
           <div className="client-results-footer">Mostrant {filtered.length} de {rows.length} finques</div>
         </section>
-      </section>
+      </section>)}
     </div>
   );
 }
