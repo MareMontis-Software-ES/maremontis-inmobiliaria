@@ -3,6 +3,7 @@
 import { supabase } from "../lib/supabase";
 import { fullName, s, todayISO } from "../lib/format";
 import { shrinkImage } from "../lib/images";
+import { ITEM_I18N, WORD_I18N, type MailLang } from "./revisionI18n";
 
 type Row = Record<string, any>;
 
@@ -290,19 +291,22 @@ export async function markRevisionMail(id: string, who: "responsible" | "owner")
   if (error) throw error;
 }
 
-/** Elements que s'han de comunicar: marcats «mal estat», «avisar» o amb extres (encarregar, falta sal) */
-export function revisionIssues(r: Revision): string[] {
+/** Elements que s'han de comunicar: marcats «mal estat», «avisar» o amb extres (encarregar, falta sal).
+ *  `lang` tradueix els noms dels elements per al correu al propietari (les observacions es deixen com s'han escrit). */
+export function revisionIssues(r: Revision, lang: MailLang = "ca"): string[] {
+  const W = (k: keyof typeof WORD_I18N) => WORD_I18N[k][lang];
+  const name = (key: string, ca: string) => (lang === "ca" ? ca : ITEM_I18N[key]?.[lang] || ca);
   const out: string[] = [];
-  if (r.alarm_notify || (r.alarm_notes && !r.alarm_on)) out.push(`Alarma (${r.alarm_on ? "ON" : "OFF"}): ${r.alarm_notes}`.trim());
-  if (r.heating_notify) out.push(`Calefacció / A.C. (${r.heating_on ? "ON" : "OFF"}): ${r.heating_notes}`.trim());
+  if (r.alarm_notify || (r.alarm_notes && !r.alarm_on)) out.push(`${name("alarm", "Alarma")} (${r.alarm_on ? "ON" : "OFF"}): ${r.alarm_notes}`.trim());
+  if (r.heating_notify) out.push(`${name("heating", "Calefacció / A.C.")} (${r.heating_on ? "ON" : "OFF"}): ${r.heating_notes}`.trim());
   for (const d of [...REV_DINSFORA, ...REV_ESTAT]) {
     const it = r.items.find(x => x.key === d.key);
     if (!it) continue;
     const bad = it.state === "mal" || it.dins || it.fora;
-    const extra = d.extra === "encarregar" && it.extra ? " — CAL ENCARREGAR" : d.extra === "falta_sal" && it.extra ? " — FALTA SAL" : d.extra === "caducitat" && it.extra ? ` — caduca ${it.extra}` : "";
+    const extra = d.extra === "encarregar" && it.extra ? ` — ${W("order")}` : d.extra === "falta_sal" && it.extra ? ` — ${W("salt")}` : d.extra === "caducitat" && it.extra ? ` — ${W("expires")} ${it.extra}` : "";
     if (bad || it.notify || extra) {
-      const where = d.kind === "dinsfora" ? [it.dins && "dins", it.fora && "fora"].filter(Boolean).join(" i ") : it.state === "mal" ? "Mal estat" : "";
-      out.push(`${d.label}${where ? ` (${where})` : ""}${extra}${it.notes ? ": " + it.notes : ""}`);
+      const where = d.kind === "dinsfora" ? [it.dins && W("inside"), it.fora && W("outside")].filter(Boolean).join(` ${W("and")} `) : it.state === "mal" ? W("bad") : "";
+      out.push(`${name(d.key, d.label)}${where ? ` (${where})` : ""}${extra}${it.notes ? ": " + it.notes : ""}`);
     }
   }
   return out;
@@ -327,7 +331,8 @@ export async function mailContext(propertyId: string, clientId: string | null, r
   return {
     responsibleEmail: s((resp as any).data?.email), responsibleName: s((resp as any).data?.full_name),
     clientEmails: (((client as any).data || []) as Row[]).map(e => s(e.email)).filter(Boolean),
-    tplOk: pick("revisio_ok"), tplIssues: pick("revisio_incidencies") || pick("revisio_ok"),
+    // amb incidències MAI es fa servir el text «tot correcte»
+    tplOk: pick("revisio_ok"), tplIssues: pick("revisio_incidencies"),
     usedLanguage: templates.some(t => t.language === language) ? language : "en",
   };
 }

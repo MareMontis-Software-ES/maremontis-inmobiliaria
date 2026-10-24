@@ -85,15 +85,15 @@ export async function saveProfile(p: ProfileRow) {
 }
 
 // ---------------- Textos de correu ----------------
-export interface Template { id?: string; kind: string; language: string; subject: string; body: string }
+export interface Template { id?: string; kind: string; language: string; subject: string; body: string; reviewed: boolean }
 export const TEMPLATE_KINDS: [string, string][] = [["revisio_ok", "Revisió feta (al propietari)"], ["revisio_incidencies", "Revisió amb incidències (al propietari)"]];
 export async function listTemplates(): Promise<Template[]> {
   const { data, error } = await supabase.from("email_templates").select("*").order("kind").order("language");
   if (error) throw error;
-  return data as Template[];
+  return (data || []).map(t => ({ ...t, reviewed: t.reviewed !== false })) as Template[];
 }
 export async function saveTemplate(t: Template) {
-  const row = { kind: t.kind, language: t.language, subject: t.subject, body: t.body };
+  const row = { kind: t.kind, language: t.language, subject: t.subject, body: t.body, reviewed: t.reviewed };
   const { error } = t.id ? await supabase.from("email_templates").update(row).eq("id", t.id) : await supabase.from("email_templates").insert(row);
   if (error) throw error;
 }
