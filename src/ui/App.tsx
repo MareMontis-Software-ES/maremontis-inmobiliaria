@@ -10,6 +10,7 @@ import { LoginScreen } from "../modules/auth/LoginScreen";
 import { Shell } from "../modules/layout/Shell";
 import { Dashboard } from "../modules/dashboard/Dashboard";
 import { ClientsPage, type ClientView } from "../modules/clients/ClientsPage";
+import type { ClientTab } from "../modules/clients/ClientDetail";
 import { PropertiesPage } from "../modules/properties/PropertiesPage";
 import { AlertsPage, KeysPage } from "../modules/alerts/GlobalPages";
 import { ContractsPage, IndustrialsPage, ConfigPage } from "../modules/admin/AdminPages";
@@ -55,7 +56,7 @@ export default function App() {
   const go = (s: Section) => {
     setSection(s);
   };
-  const openClient = (id: string) => { setSection("Clients"); setClientView({ mode: "detail", id }); };
+  const openClient = (id: string, tab?: ClientTab) => { setSection("Clients"); setClientView({ mode: "detail", id, tab }); };
   // Tot gira al voltant del client: una finca s'obre dins la fitxa del seu titular principal
   const openProperty = async (id: string) => {
     const clientId = await mainClientOf(id).catch(() => null);
@@ -69,6 +70,10 @@ export default function App() {
     <Shell section={section} crumb={crumb} profile={profile} email={session.user.email || ""} query={query} overdue={overdue}
       onNavigate={go}
       onSearch={q => { setQuery(q); setSection("Clients"); setClientView({ mode: "list" }); }}
+      onPick={h => {
+        if (h.kind === "finca") void openProperty(h.id);
+        else if (h.client_id) openClient(h.client_id, h.kind === "matricula" ? "matricules" : h.kind === "client" ? undefined : "conjuge");
+      }}
       onLogout={async () => { await supabase.auth.signOut(); setSection("Inici"); }}>
       {profileError && <div className="work-area"><Notice kind="error">{profileError}</Notice></div>}
       <div style={{ display: section === "Clients" ? undefined : "none" }}>
