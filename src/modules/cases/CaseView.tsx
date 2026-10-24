@@ -2,7 +2,7 @@
 // Revisions · Exterior · Interior · Fotos d'inventari.
 // Es fa servir des de «Revisions» (menú) i des de la pestanya Revisions de la fitxa del client.
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarDays, Camera, Check, CheckCheck, ClipboardCheck, Home, Images, Mail, Pencil, Plus, Save, Trash2, Trees, X } from "lucide-react";
+import { AlertTriangle, CalendarDays, Camera, Check, CheckCheck, FileDown, Printer, ClipboardCheck, Home, Images, Mail, Pencil, Plus, Save, Trash2, Trees, X } from "lucide-react";
 import { Empty, Notice, Panel } from "../../components/ui";
 import { errorText } from "../../lib/supabase";
 import { fmtDate } from "../../lib/format";
@@ -12,6 +12,7 @@ import { EQ_LABEL, EXTERIOR, getCase, getEquipment, INTERIOR, listRevisions, mai
 import { listIndustrialsFull, type Industrial } from "../../data/admin";
 import { profilePick } from "../../data/global";
 import { saveIncident } from "../../data/incidents";
+import { buildRevisionPdf, reportFileName } from "./revisionReport";
 
 type Sub = "revisions" | "exterior" | "interior" | "fotos";
 
@@ -136,6 +137,7 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
   const [meters, setMeters] = useState({ water: "", power: "", gas: "" });
   const [mail, setMail] = useState<null | { to: string; cc: string; subject: string; body: string; who: "responsible" | "owner"; from: string; note?: string }>(null);
   const [pending, setPending] = useState<PendingPhoto[]>([]);
+  const [busyPdf, setBusyPdf] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(""); const [ok, setOk] = useState("");
 
@@ -217,6 +219,27 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
   const setItem = (key: string, patch: Partial<RevItem>) => setCur(r => ({ ...r!, items: r!.items.some(i => i.key === key) ? r!.items.map(i => i.key === key ? { ...i, ...patch } : i) : [...r!.items, { key, notes: "", notify: false, ...patch }] }));
   const item = (key: string): RevItem => cur?.items.find(i => i.key === key) || { key, notes: "", notify: false, state: "" };
   const ro = !editing;
+  // lectura de la revisió anterior (per a una revisió ja gravada es busca la que la precedeix)
+  const prevReading = (k: "water" | "power" | "gas") => !cur ? "" : cur.id
+    ? (rows || []).find(r => r.revision_date < cur.revision_date || (r.revision_date === cur.revision_date && r.id !== cur.id && Number(r.revision_number) < Number(cur.revision_number)))?.[`${k}_reading`] || ""
+    : cur[`${k}_prev`] || "";
+
+  async function report(mode: "download" | "print") {
+    if (!cur?.id) return;
+    setBusyPdf(true); setError("");
+    try {
+      const doc = await buildRevisionPdf({ c, r: cur, prev: { water: prevReading("water"), power: prevReading("power"), gas: prevReading("gas") },
+        responsibleName: people.find(p => p.id === cur.responsible_id)?.name || "", photos: await listPhotos(c.id, cur.id) });
+      if (mode === "download") doc.save(reportFileName(c, cur));
+      else {
+        doc.autoPrint();
+        const w = window.open(String(doc.output("bloburl")), "_blank");
+        if (!w) doc.save(reportFileName(c, cur)); // finestres emergents bloquejades: es descarrega
+      }
+    } catch (e) { setError("No s'ha pogut generar l'informe: " + errorText(e)); }
+    finally { setBusyPdf(false); }
+  }
+
   const allGood = () => setCur(r => ({ ...r!, items: [...REV_DINSFORA, ...REV_ESTAT].map(d => {
     const it = r!.items.find(i => i.key === d.key) || { key: d.key, notes: "", notify: false, state: "" as const };
     return d.kind === "estat" && !it.state ? { ...it, state: "bon" as const } : it;
@@ -269,7 +292,7 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
                   <tbody>
                     {(["water", "power", "gas"] as const).map(k => {
                       const L = { water: "Aigua", power: "Llum", gas: "Gas" }[k];
-                      const prev = cur.id ? (rows || []).find(r => r.revision_date < cur.revision_date || (r.revision_date === cur.revision_date && r.id !== cur.id && Number(r.revision_number) < Number(cur.revision_number)))?.[`${k}_reading`] : cur[`${k}_prev`];
+                      const prev = prevReading(k);
                       return (
                         <tr key={k} className="rev-reading"><th>{L}</th>
                           <td className="rev-onoff"><Toggle on={cur[`${k}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_on`]: v })} /></td>
@@ -333,6 +356,8 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
                   <div className="note-actions">
                     <button className="outline-btn" onClick={() => prepareMail("responsible")}><Mail size={15} /> Correu als responsables {cur.email_sent_responsible_at && <Check size={14} />}</button>
                     <button className="outline-btn" onClick={() => prepareMail("owner")}><Mail size={15} /> Correu al propietari (en el seu idioma) {cur.email_sent_owner_at && <Check size={14} />}</button>
+                    <button className="outline-btn" disabled={busyPdf} onClick={() => report("download")}><FileDown size={15} /> {busyPdf ? "Preparant l'informe…" : "Informe PDF"}</button>
+                    <button className="outline-btn" disabled={busyPdf} onClick={() => report("print")}><Printer size={15} /> Imprimir informe</button>
                     {canWrite && <button className="outline-btn" onClick={createIncident}><AlertTriangle size={15} /> Crear incidència amb el que cal avisar</button>}
                   </div>
                   {mail && (
@@ -351,7 +376,7 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
                           <Mail size={16} /> Obrir al programa de correu</a>
                         <button className="cancel-btn" onClick={() => setMail(null)}><X size={16} /> Tancar</button>
                       </div>
-                      <p className="hint">Les fotos s'han d'adjuntar des del programa de correu (descarrega-les a «Fotos de la revisió»).</p>
+                      <p className="hint">Per adjuntar-ho al correu: descarrega l'«Informe PDF» (inclou les fotos) i afegeix-lo des del programa de correu.</p>
                     </div>
                   )}
                 </Panel>
