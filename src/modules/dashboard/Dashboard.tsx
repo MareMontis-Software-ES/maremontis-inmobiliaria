@@ -42,6 +42,7 @@ function alertKind(a: Alert): Kind {
   if (t.includes("energètic")) return KINDS.energetic;
   return KINDS.manual;
 }
+const KindIcon = ({ k }: { k: Kind }) => <span className={"kind-ico k-" + k.color} title={k.label}><k.icon size={19} /></span>;
 const KindDot = ({ k }: { k: Kind }) => <span className={"kind-dot k-" + k.color} title={k.label}><k.icon size={15} /></span>;
 
 const DAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
@@ -81,76 +82,96 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
 
   const n = (v?: number) => (counts ? String(v ?? 0) : "…");
   const revDue = cases.filter(c => c.next && c.next.date <= addDaysISO(today, 15)).sort((a, b) => a.next!.date.localeCompare(b.next!.date));
-  const stats: [any, string, string, string, Section, string][] = [
-    [Building2, n(counts?.properties), "Immobles", "actius", "Immobles", "green"],
-    [Users, n(counts?.clients), "Clients", "actius", "Clients", "blue"],
-    [Bell, n(counts?.alerts), "Alertes", `${counts?.overdue ?? 0} vençudes`, "Alertes", "amber"],
-    [KeyRound, n(counts?.keys), "Claus", "fora d'oficina", "Claus", "purple"],
-    [AlertTriangle, n(counts?.incidents), "Incidències", "obertes", "Incidències", "red"],
-    [CalendarDays, counts ? String(revDue.length) : "…", "Revisions", "pendents (15 dies)", "Revisions", "teal"],
+  const revLate = revDue.filter(c => c.next!.overdue).length;
+  const incOpen = incidents.filter(i => i.status === "oberta").length;
+  const incProgress = incidents.filter(i => i.status === "en_curs").length;
+  const stats: [any, string, string, string[], Section, string][] = [
+    [Building2, n(counts?.properties), "Immobles", ["actius"], "Immobles", "green"],
+    [Users, n(counts?.clients), "Clients", ["actius"], "Clients", "blue"],
+    [Bell, n(counts?.alerts), "Alertes", [`${dueSoon.length} en 7 dies`, `${counts?.overdue ?? 0} vençudes`], "Alertes", "amber"],
+    [Wrench, counts ? String(revDue.length) : "…", "Revisions", [`${revDue.length - revLate} pròximes`, `${revLate} vençudes`], "Revisions", "teal"],
+    [AlertTriangle, n(counts?.incidents), "Incidències", [`${incOpen} obertes`, `${incProgress} en curs`], "Incidències", "red"],
+    [KeyRound, n(counts?.keys), "Claus", ["fora d'oficina"], "Claus", "purple"],
   ];
 
-  // Tasques per avui: alertes d'avui o vençudes, revisions que toquen i incidències obertes.
-  type Task = { key: string; kind: Kind; title: string; sub: string; state: "late" | "today" | "open"; go: () => void };
+  // Estat de cada alerta (com a la mostra: vençuda, avui, pròxima)
+  const alertState = (a: Alert): [string, string] =>
+    a.overdue || (a.due_date && a.due_date < today) ? ["Vençuda", "st-late"]
+      : a.due_date === today ? ["Avui", "st-today"]
+      : a.due_date && a.due_date <= in7 ? ["Pròxima", "st-ok"] : ["Pendent", "st-grey"];
+
+  // Tasques d'avui: alertes d'avui o vençudes, revisions que toquen i incidències obertes o en curs.
+  type Task = { key: string; kind: Kind; when: string; title: string; sub: string; state: "late" | "today" | "open" | "progress"; go: () => void };
   const tasks: Task[] = [
     ...alerts.filter(a => a.due_date && a.due_date <= today).map(a => ({
-      key: "a" + a.id, kind: alertKind(a), title: a.title, sub: a.client_name || "",
+      key: "a" + a.id, kind: alertKind(a), when: a.due_date!, title: a.title, sub: a.client_name || "",
       state: (a.due_date! < today ? "late" : "today") as Task["state"], go: () => { if (a.client_id) onOpenClient(a.client_id); },
     })),
     ...cases.filter(c => c.next && c.next.date <= today).map(c => ({
-      key: "c" + c.id, kind: KINDS.revisio, title: "Revisió: " + c.address, sub: c.client_name,
+      key: "c" + c.id, kind: KINDS.revisio, when: c.next!.date, title: "Revisió: " + c.address, sub: c.client_name,
       state: (c.next!.date < today ? "late" : "today") as Task["state"], go: () => onOpenProperty(c.id),
     })),
-    ...incidents.filter(i => i.status === "oberta").map(i => ({
-      key: "i" + i.id, kind: KINDS.incidencia, title: i.description.split("\n")[0] || "Incidència", sub: [i.client_name, i.finca].filter(Boolean).join(" · "),
-      state: "open" as const, go: () => onNavigate("Incidències"),
+    ...incidents.filter(i => i.status === "oberta" || i.status === "en_curs").map(i => ({
+      key: "i" + i.id, kind: KINDS.incidencia, when: i.incident_date, title: i.description.split("\n")[0] || "Incidència",
+      sub: [i.client_name, i.finca].filter(Boolean).join(" · "),
+      state: (i.status === "en_curs" ? "progress" : "open") as Task["state"], go: () => onNavigate("Incidències"),
     })),
   ];
-  const order = { today: 0, late: 1, open: 2 };
-  tasks.sort((a, b) => order[a.state] - order[b.state]);
-  const STATE_TXT = { late: "Endarrerida", today: "Avui", open: "Oberta" };
+  const order = { today: 0, late: 1, open: 2, progress: 3 };
+  tasks.sort((a, b) => order[a.state] - order[b.state] || a.when.localeCompare(b.when));
+  const STATE: Record<Task["state"], [string, string]> = {
+    late: ["Endarrerida", "st-late"], today: ["Pendent", "st-today"], open: ["Pendent", "st-today"], progress: ["En curs", "st-ok"],
+  };
+  const whenTxt = (d: string) => (d === today ? "Avui" : fmtDate(d).slice(0, 5));
+  const agenda = tasks.filter(t => t.when === today);
 
   return (
     <div className="dashboard-area">
-      <section className="welcome-banner">
-        <div className="welcome-copy"><small>MAREMONTIS</small><h1>{greeting}{userName ? `, ${userName}` : ""}</h1><p>Resum de l'activitat d'avui.</p></div>
-        <div className="welcome-date">{DAYS[now.getDay()]}<br /><strong>{now.getDate()} de {MONTHS[now.getMonth()]} de {now.getFullYear()}</strong></div>
-      </section>
-      {error && <Notice kind="error">No s'han pogut carregar les dades: {error}</Notice>}
       <div className="dashboard-layout">
         <div className="dashboard-main">
+          <section className="welcome-banner">
+            <div className="welcome-copy"><small>MAREMONTIS</small><h1>{greeting}{userName ? `, ${userName}` : ""}</h1><p>Aquí tens el resum de l'activitat d'avui.</p></div>
+            <div className="welcome-date">{DAYS[now.getDay()][0].toUpperCase() + DAYS[now.getDay()].slice(1)},<br /><strong>{now.getDate()} de {MONTHS[now.getMonth()]} de {now.getFullYear()}</strong></div>
+          </section>
+          {error && <Notice kind="error">No s'han pogut carregar les dades: {error}</Notice>}
           <div className="stat-cards">
-            {stats.map(([Icon, num, label, sub, target, color]) => (
+            {stats.map(([Icon, num, label, subs, target, color]) => (
               <button className={"stat-card k-" + color} key={label} onClick={() => onNavigate(target)}>
-                <span className="stat-ico"><Icon size={18} /></span><strong>{num}</strong><span>{label}</span><small>{sub}</small><ChevronRight size={13} />
+                <span className="stat-ico"><Icon size={26} /></span><strong>{num}</strong><span>{label}</span>
+                <small>{subs.map(t => <em key={t}>{t}</em>)}</small><ChevronRight size={13} />
               </button>
             ))}
           </div>
           <div className="dashboard-pair">
-            <section className="dash-panel tasks-panel">
-              <header><strong>Tasques per avui <span className="count-pill green">{tasks.length}</span></strong></header>
-              {!tasks.length && <p className="empty-line pad">Res pendent per avui.</p>}
-              {tasks.slice(0, 10).map(t => (
-                <button className="today-row as-button" key={t.key} onClick={t.go}>
-                  <KindDot k={t.kind} />
-                  <div><strong>{t.title}</strong><small>{t.sub}</small></div>
-                  <span className={"state-chip st-" + t.state}><i className="dot" />{STATE_TXT[t.state]}</span>
-                </button>
-              ))}
-              {tasks.length > 10 && <p className="empty-line pad">… i {tasks.length - 10} més</p>}
-            </section>
             <section className="dash-panel">
-              <header><strong>Alertes pendents <span className="count-pill">{alerts.length}</span></strong></header>
-              <div className="dash-table-head"><span></span><span>ALERTA</span><span>DATA</span><span>ESTAT</span></div>
+              <header><strong>Alertes pendents <span className="count-pill">{alerts.length}</span></strong><button onClick={() => onNavigate("Alertes")}>Veure totes →</button></header>
+              <div className="dash-table-head"><span>TIPUS</span><span>DESCRIPCIÓ</span><span>DATA</span><span>ESTAT</span></div>
               {!alerts.length && <p className="empty-line pad">No hi ha alertes pendents.</p>}
-              {alerts.slice(0, 8).map(a => (
-                <button className="alert-row as-button" key={a.id} onClick={() => a.client_id && onOpenClient(a.client_id)}>
-                  <KindDot k={alertKind(a)} />
-                  <div><strong>{a.title}</strong><small>{a.client_name || a.content || ""}</small></div>
-                  <small>{fmtDate(a.due_date)}</small>
-                  <span className={"status-pill " + (a.overdue ? "status-warn" : "status-ok")}><i className="dot" />{a.overdue ? "Vençuda" : "Pendent"}</span>
+              {alerts.slice(0, 8).map(a => {
+                const [txt, cls] = alertState(a);
+                return (
+                  <button className="alert-row as-button" key={a.id} onClick={() => a.client_id && onOpenClient(a.client_id)}>
+                    <KindIcon k={alertKind(a)} />
+                    <div><strong>{a.title}</strong><small>{a.client_name || a.content || ""}</small></div>
+                    <small className={cls === "st-late" ? "txt-late" : ""}>{fmtDate(a.due_date)}</small>
+                    <span className={"state-chip " + cls}>{txt}</span><ChevronRight size={13} />
+                  </button>
+                );
+              })}
+            </section>
+            <section className="dash-panel tasks-panel">
+              <header><strong>Tasques d'avui <span className="count-pill green">{tasks.length}</span></strong><button onClick={() => onNavigate("Alertes")}>Veure totes →</button></header>
+              <div className="dash-table-head tasks-head"><span>DIA</span><span>TASCA</span><span>TIPUS</span><span>ESTAT</span></div>
+              {!tasks.length && <p className="empty-line pad">Res pendent per avui.</p>}
+              {tasks.slice(0, 8).map(t => (
+                <button className="today-row as-button" key={t.key} onClick={t.go}>
+                  <time><i className={"tl-dot k-" + t.kind.color} />{whenTxt(t.when)}</time>
+                  <div><strong>{t.title}</strong><small>{t.sub}</small></div>
+                  <span className="type-chip">{t.kind.label}</span>
+                  <span className={"state-chip " + STATE[t.state][1]}>{STATE[t.state][0]}</span><ChevronRight size={13} />
                 </button>
               ))}
+              {tasks.length > 8 && <p className="empty-line pad">… i {tasks.length - 8} més</p>}
             </section>
           </div>
         </div>
@@ -171,18 +192,27 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
             </div>
           </section>
           <section className="agenda-panel">
-            <header><strong>Venciments (7 dies)</strong><span className="count-pill green">{dueSoon.length}</span></header>
+            <header><strong>Agenda d'avui</strong><button onClick={() => onNavigate("Alertes")}>Veure totes →</button></header>
+            {!agenda.length && <p className="empty-line pad">Res programat per avui.</p>}
+            {agenda.slice(0, 6).map(t => (
+              <button className="agenda-row as-button" key={t.key} onClick={t.go}>
+                <i className={"tl-dot k-" + t.kind.color} /><div><strong>{t.title}</strong><small>{t.sub}</small></div>
+              </button>
+            ))}
+          </section>
+          <section className="due-panel">
+            <header><strong>Pròxims venciments (7 dies)</strong><button onClick={() => onNavigate("Alertes")}>Veure tots →</button></header>
             {!dueSoon.length && <p className="empty-line pad">Res a vèncer aquesta setmana.</p>}
-            {dueSoon.map(a => (
-              <button className="agenda-row as-button" key={a.id} onClick={() => a.client_id && onOpenClient(a.client_id)}>
-                <time>{fmtDate(a.due_date).slice(0, 5)}</time><div><strong>{a.title}</strong><small>{a.client_name}</small></div>
+            {dueSoon.slice(0, 6).map(a => (
+              <button className="due-row as-button" key={a.id} onClick={() => a.client_id && onOpenClient(a.client_id)}>
+                <KindDot k={alertKind(a)} /><div><strong>{a.title}</strong><small>{a.client_name}</small></div><time>{fmtDate(a.due_date)}</time>
               </button>
             ))}
           </section>
           <section className="due-panel">
             <header><strong>Revisions a fer</strong><button onClick={() => onNavigate("Revisions")}>Veure totes →</button></header>
             {!revDue.length && <p className="empty-line pad">Cap revisió pendent els pròxims 15 dies.</p>}
-            {revDue.slice(0, 6).map(c => (
+            {revDue.slice(0, 5).map(c => (
               <button className="due-row as-button" key={c.id} onClick={() => onOpenProperty(c.id)}>
                 <KindDot k={KINDS.revisio} /><div><strong>{c.address}</strong><small>{c.client_name}</small></div><time className={c.next!.overdue ? "txt-warn" : ""}>{fmtDate(c.next!.date)}</time>
               </button>
