@@ -105,4 +105,4 @@ export interface Alert {
 
 export type Section =
   | "Inici" | "Clients" | "Immobles" | "Alertes" | "Claus" | "Incidències" | "Revisions"
-  | "Contractes" | "Industrials" | "Impostos" | "Configuració";
+  | "Contractes" | "Industrials" | "Impostos" | "Estadístiques" | "Configuració";

@@ -15,6 +15,7 @@ import { AlertsPage, KeysPage } from "../modules/alerts/GlobalPages";
 import { ContractsPage, IndustrialsPage, ConfigPage } from "../modules/admin/AdminPages";
 import { CasesPage } from "../modules/cases/CasesPage";
 import { TaxesPage } from "../modules/taxes/TaxesPage";
+import { StatsPage } from "../modules/stats/StatsPage";
 import { IncidentsView } from "../modules/incidents/IncidentsView";
 import { mainClientOf } from "../data/finques";
 import { Notice } from "../components/ui";
@@ -95,6 +96,8 @@ export default function App() {
         <IndustrialsPage canWrite={canWrite} />
       ) : section === "Impostos" ? (
         <TaxesPage canWrite={canWrite} onOpenProperty={openProperty} />
+      ) : section === "Estadístiques" ? (
+        <StatsPage />
       ) : (
         <ConfigPage isAdmin={profile?.role === "admin"} />
       )}

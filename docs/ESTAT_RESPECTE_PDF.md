@@ -50,6 +50,7 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Importació IBI | Incorporar fitxers d'IBI | Importació de CSV per referència cadastral | 🟡 (cal un exemple del fitxer real) |
 | Comptabilitat | ODBC a la taula d'immobles amb els mateixos noms de camp; «Impostos pagament = S» + data; factures d'inici d'any només clients no de baixa | — | ⏳ |
 | Llistats | — | Exportació Excel a Claus, Revisions i Impostos | 🟡 |
+| Estadístiques | Estadístiques i informes calculats sobre les dades (sense detallar) | Menú Estadístiques (només consulta): cartera de clients i finques (residents, població, zona, contracte, lloguer, idioma, país, baixes per any) i activitat per any (revisions i incidències per mes, notes de servei, alertes, claus, impostos) | 🟡 (informes concrets a validar) |
 | SMS | Botó a la pantalla antiga | — | ⏳ (no s'esmenta a les anotacions) |
 | Reindexar | Manteniment de la base de dades antiga | No cal (Supabase/PostgreSQL) | ❌ |
 | Entrades massives | — | Importació IBI; la resta, per definir | ⏳ |
