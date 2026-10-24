@@ -191,3 +191,25 @@
 .auth-card .auth-submit{justify-content:center;width:100%;padding:13px;border:0;border-radius:8px}
 .auth-card>small,.auth-loading{color:var(--muted);text-align:center;font-size:12px}
 .auth-submit:disabled{opacity:.65;cursor:wait}
+/* Inici: cercles de colors per tipus (alertes, tasques, comptadors) */
+.kind-dot,.stat-ico{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;flex:none}
+.kind-dot svg,.stat-ico svg{stroke-width:2}
+.k-blue{--k:#2f6fa8;--kb:#e2edf7}.k-pink{--k:#b8487a;--kb:#f7e3ec}.k-amber{--k:#b0761f;--kb:#f8ecd6}.k-teal{--k:#1f7f7a;--kb:#dcefed}
+.k-purple{--k:#71519c;--kb:#ece5f5}.k-lime{--k:#6c8a1e;--kb:#ecf2d8}.k-green{--k:#2f6b4f;--kb:#e0eee5}.k-red{--k:#b0442c;--kb:#f8e1da}.k-grey{--k:#6e7468;--kb:#ebebe5}
+.kind-dot{color:var(--k);background:var(--kb)}
+.stat-card .stat-ico{grid-row:span 2;width:32px;height:32px;color:var(--k);background:var(--kb)}
+.stat-card{border-left:3px solid var(--k,#e4dccb)}
+.dash-table-head{grid-template-columns:30px minmax(75px,1fr) 66px 72px}
+.alert-row{grid-template-columns:30px minmax(75px,1fr) 66px 72px}
+.status-pill .dot,.state-chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:5px;display:inline-block}
+.today-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 9px;border-bottom:1px solid #f1ebdf;min-height:44px;width:100%;text-align:left}
+.today-row:hover,.alert-row.as-button:hover{background:#f8f3e7}
+.today-row>div{display:grid;gap:3px;min-width:0}
+.today-row strong{font:11px Inter,"Segoe UI",Arial,sans-serif;color:#263a30;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.today-row small{font:9px Inter,"Segoe UI",Arial,sans-serif;color:#838477;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state-chip{display:inline-flex;align-items:center;font-size:9px;padding:4px 7px;border-radius:10px;white-space:nowrap}
+.st-late{background:#f8e1da;color:#a3402a}.st-today{background:#f8ecd6;color:#9a6416}.st-open{background:#e2edf7;color:#2f6fa8}
+.agenda-panel>header .count-pill{margin-left:auto}
+.agenda-row.as-button{width:100%;text-align:left}.agenda-row.as-button:hover{background:#f8f3e7}
+.due-row{grid-template-columns:30px minmax(0,1fr) 55px}
+@media(max-width:560px){.dash-table-head,.alert-row{grid-template-columns:30px minmax(65px,1fr) 60px 66px}}
