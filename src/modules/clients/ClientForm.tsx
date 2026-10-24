@@ -1,11 +1,11 @@
 // Alta i modificació de clients (PDF pàg. 2, 3 i 5 + PDF 2 «Client»).
 // El mateix formulari serveix per crear i per editar.
-import { useState } from "react";
-import { Car, FileText, Folder, Mail, MapPin, Phone, Plus, Save, Trash2, UserRound, Users, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Car, FileText, Folder, Mail, MapPin, Phone, Plus, Save, Trash2, UserRound, Users, X } from "lucide-react";
 import { CheckInput, Notice, SelectInput, TextArea, TextInput } from "../../components/ui";
 import { COUNTRIES, EMAIL_TYPES, LANGUAGES, PHONE_TYPES, STREET_TYPES, TITLES, TOWNS } from "../../lib/constants";
 import { accountCode, checkDniNie, checkEmail } from "../../lib/format";
-import { emptyRelated } from "../../data/clients";
+import { emptyRelated, findDuplicates, type DuplicateHit } from "../../data/clients";
 import type { ClientFull, Profile, RelatedPerson } from "../../types";
 
 interface Props {
@@ -21,6 +21,14 @@ export function ClientForm({ initial, responsibles, saving, error, onSave, onCan
   const [f, setF] = useState<ClientFull>(initial);
   const [tried, setTried] = useState(false);
   const isNew = !initial.client.id;
+  const [dups, setDups] = useState<DuplicateHit[]>([]);
+
+  // Avís de duplicats: es comprova mentre s'escriu (amb una petita espera) i abans de gravar
+  const dupKey = JSON.stringify([f.client.dni, f.client.nie, f.client.passport, f.phones.map(p => p.phone_number), f.emails.map(e => e.email)]);
+  useEffect(() => {
+    const t = setTimeout(() => { findDuplicates(f).then(setDups).catch(() => setDups([])); }, 600);
+    return () => clearTimeout(t);
+  }, [dupKey]);
 
   // Helpers per modificar parts de l'estat sense repetir codi
   const setClient = (k: keyof ClientFull["client"], v: any) => setF(p => ({ ...p, client: { ...p.client, [k]: v } }));
@@ -42,9 +50,12 @@ export function ClientForm({ initial, responsibles, saving, error, onSave, onCan
   const hasErrors = !!(errors.name || errors.code || errors.dni || errors.nie || errors.emails.some(Boolean) || errors.pct.some(Boolean));
   const show = (e: string | null) => (tried ? e : null);
 
-  function submit() {
+  async function submit() {
     setTried(true);
     if (hasErrors) return;
+    const found = await findDuplicates(f).catch(() => dups);
+    setDups(found);
+    if (found.length && !window.confirm(`Atenció: possible client duplicat.\n\n${found.map(d => `· ${accountCode(d.client_code)} ${d.name}${d.status !== "active" ? " (baixa)" : ""}: ${d.fields.join(", ")}`).join("\n")}\n\nVols gravar igualment?`)) return;
     onSave(f);
   }
 
@@ -63,6 +74,16 @@ export function ClientForm({ initial, responsibles, saving, error, onSave, onCan
       <div className="new-client-title"><Users size={22} /><strong>{isNew ? "Alta de client" : `Modificar client ${accountCode(c.client_code)}`}</strong></div>
       {error && <Notice kind="error">{error}</Notice>}
       {tried && hasErrors && <Notice kind="error">Revisa els camps marcats en vermell.</Notice>}
+      {dups.length > 0 && (
+        <div className="dup-warning" role="alert">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>Possible client duplicat</strong> — {dups.length === 1 ? "hi ha un altre client" : `hi ha ${dups.length} clients`} amb dades iguals:
+            <ul>{dups.map(d => <li key={d.client_id}><b>{accountCode(d.client_code)} · {d.name}</b>{d.status !== "active" && " (de baixa)"} — {d.fields.join(" · ")}</li>)}</ul>
+            <small>Comprova que no sigui el mateix client abans de gravar. Si ho és, cancel·la i obre la seva fitxa (pots buscar-lo a la barra de dalt).</small>
+          </div>
+        </div>
+      )}
 
       <datalist id="towns">{TOWNS.map(t => <option key={t.town} value={t.town} />)}</datalist>
       <datalist id="countries">{COUNTRIES.map(t => <option key={t.code} value={t.name} />)}</datalist>

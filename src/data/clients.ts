@@ -172,3 +172,24 @@ export async function clientTaxes(properties: PropertyLink[]): Promise<TaxRow[]>
     return { ...t, address: p?.address || "", ownership_percentage: p?.ownership_percentage ?? null, cadastral_ref: s(t.cadastral_ref), paid_date: s(t.paid_date) } as TaxRow;
   });
 }
+
+// ---------------- Avís de duplicats ----------------
+export interface DuplicateHit { client_id: string; client_code: number; name: string; status: string; fields: string[] }
+
+/** Altres clients amb el mateix DNI/NIE/passaport, telèfon o e-mail (un registre per client) */
+export async function findDuplicates(full: ClientFull): Promise<DuplicateHit[]> {
+  const c = full.client;
+  const docs = [c.dni, c.nie, c.passport].map(v => v.trim()).filter(Boolean);
+  const phones = full.phones.map(p => p.phone_number.trim()).filter(Boolean);
+  const emails = full.emails.map(e => e.email.trim()).filter(Boolean);
+  if (!docs.length && !phones.length && !emails.length) return [];
+  const { data, error } = await supabase.rpc("find_client_duplicates", { p_client: c.id || null, p_docs: docs, p_phones: phones, p_emails: emails });
+  if (error) throw error;
+  const by = new Map<string, DuplicateHit>();
+  for (const r of (data || []) as Row[]) {
+    const h: DuplicateHit = by.get(r.client_id) || { client_id: r.client_id, client_code: r.client_code, name: s(r.name), status: s(r.status), fields: [] };
+    h.fields.push(`${r.field} ${s(r.value)}`);
+    by.set(r.client_id, h);
+  }
+  return [...by.values()];
+}

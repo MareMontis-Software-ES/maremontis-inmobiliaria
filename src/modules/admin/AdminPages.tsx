@@ -204,11 +204,13 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="master-detail">
       <Panel title="Textos del correu al propietari, per idioma" icon={Mail}
-        action={isAdmin && <button className="add-small" onClick={() => setSel({ kind: "revisio_ok", language: "ca", subject: "Revisió casa {{finca}}", body: "" })}><Plus size={13} /> Nou text</button>}>
+        action={isAdmin && <button className="add-small" onClick={() => setSel({ kind: "revisio_ok", language: "ca", subject: "Revisió casa {{finca}}", body: "", reviewed: true })}><Plus size={13} /> Nou text</button>}>
         {error && <Notice kind="error">{error}</Notice>}
+        {rows.some(t => !t.reviewed) && <Notice>Hi ha {rows.filter(t => !t.reviewed).length} textos traduïts pendents de revisar. Obre'ls, corregeix el que calgui i grava'ls amb «Revisat» marcat.</Notice>}
         {!rows.length ? <Empty>No hi ha textos.</Empty> : (
-          <table className="mini-table"><thead><tr><th>Tipus</th><th>Idioma</th><th>Assumpte</th></tr></thead>
-            <tbody>{rows.map(t => <tr key={t.id} className={sel?.id === t.id ? "row-sel" : ""} onClick={() => setSel({ ...t })}><td>{TEMPLATE_KINDS.find(k => k[0] === t.kind)?.[1] || t.kind}</td><td>{langName(t.language)}</td><td>{t.subject}</td></tr>)}</tbody></table>
+          <table className="mini-table"><thead><tr><th>Tipus</th><th>Idioma</th><th>Assumpte</th><th>Estat</th></tr></thead>
+            <tbody>{rows.map(t => <tr key={t.id} className={sel?.id === t.id ? "row-sel" : ""} onClick={() => setSel({ ...t })}><td>{TEMPLATE_KINDS.find(k => k[0] === t.kind)?.[1] || t.kind}</td><td>{langName(t.language)}</td><td>{t.subject}</td>
+              <td>{t.reviewed ? <span className="status-pill status-ok">Revisat</span> : <span className="status-pill status-warn">Pendent de revisar</span>}</td></tr>)}</tbody></table>
         )}
         <p className="hint">Es pot fer servir <code>{"{{finca}}"}</code>, <code>{"{{data}}"}</code>, <code>{"{{client}}"}</code> i <code>{"{{incidencies}}"}</code> (llista d'elements en mal estat). Si un client té un idioma sense text, s'envia en anglès.</p>
       </Panel>
@@ -218,7 +220,8 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
             <SelectInput label="Tipus" value={sel.kind} onChange={v => setSel({ ...sel, kind: v })} options={TEMPLATE_KINDS} />
             <SelectInput label="Idioma" value={sel.language} onChange={v => setSel({ ...sel, language: v })} options={LANGUAGES} />
             <TextInput label="Assumpte" value={sel.subject} onChange={v => setSel({ ...sel, subject: v })} wide />
-            <TextArea label="Text del correu" value={sel.body} onChange={v => setSel({ ...sel, body: v })} rows={9} />
+            <TextArea label="Text del correu" value={sel.body} onChange={v => setSel({ ...sel, body: v })} rows={12} />
+            <CheckInput label="Revisat (el text és correcte i es pot enviar)" checked={sel.reviewed} onChange={v => setSel({ ...sel, reviewed: v })} />
           </div>
           {isAdmin && <div className="tab-actions inline"><button className="save-btn" onClick={() => saveTemplate(sel).then(() => { setSel(null); return load(); }).catch(e => setError(errorText(e)))}><Save size={16} /> Gravar</button><button className="cancel-btn" onClick={() => setSel(null)}><X size={16} /> Cancel·lar</button></div>}
         </Panel>
