@@ -1,8 +1,8 @@
 // Inici: només dades reals. Si no n'hi ha, es mostra buit (mai xifres d'exemple).
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Bell, Building2, CalendarDays, ChevronRight, FileText, Folder, House, KeyRound, Users, Wrench } from "lucide-react";
+import { AlertTriangle, Bell, Building2, CalendarDays, ChevronRight, FileText, KeyRound, Users, Wrench } from "lucide-react";
 import { generateAutomaticAlerts, listAlerts } from "../../data/alerts";
-import { dashboardCounts, recentProperties } from "../../data/properties";
+import { dashboardCounts } from "../../data/properties";
 import { errorText } from "../../lib/supabase";
 import { addDaysISO, fmtDate, todayISO } from "../../lib/format";
 import { Notice } from "../../components/ui";
@@ -23,7 +23,6 @@ const DAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres
 export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpenProperty }: Props) {
   const [counts, setCounts] = useState<Awaited<ReturnType<typeof dashboardCounts>> | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [recent, setRecent] = useState<Awaited<ReturnType<typeof recentProperties>>>([]);
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [error, setError] = useState("");
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
@@ -32,8 +31,8 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
     (async () => {
       try {
         if (canWrite) await generateAutomaticAlerts().catch(() => 0);
-        const [c, a, r] = await Promise.all([dashboardCounts(), listAlerts({ onlyPending: true }), recentProperties()]);
-        setCounts(c); setAlerts(a); setRecent(r);
+        const [c, a] = await Promise.all([dashboardCounts(), listAlerts({ onlyPending: true })]);
+        setCounts(c); setAlerts(a);
         listCases().then(setCases).catch(() => {});
       } catch (e) { setError(errorText(e)); }
     })();
@@ -105,27 +104,6 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
                 </button>
               ))}
             </section>
-          </div>
-          <section className="recent-properties">
-            <header><strong>Immobles modificats recentment</strong><button onClick={() => onNavigate("Immobles")}>Veure tots →</button></header>
-            {recent.length ? (
-              <div className="property-cards">
-                {recent.map((p, i) => (
-                  <button key={p.id} onClick={() => onOpenProperty(p.id)}>
-                    <div className={"property-thumb thumb-" + i}><House size={29} /></div>
-                    <strong>{p.address}</strong><small>Núm. {p.admin_number} · {p.municipality}</small>
-                  </button>
-                ))}
-              </div>
-            ) : <p className="empty-line pad">Encara no hi ha immobles registrats.</p>}
-          </section>
-          <div className="module-tiles">
-            {([[Building2, "IMMOBLES", "Gestiona el parc immobiliari", "Immobles"], [Users, "CLIENTS", "Propietaris i contactes", "Clients"],
-              [FileText, "CONTRACTES", "Tipus i prestacions", "Contractes"], [CalendarDays, "REVISIONS", "Control de cases", "Revisions"],
-              [KeyRound, "CLAUS", "Entregues i retorns", "Claus"], [Folder, "IMPOSTOS", "IBI, renda i model 210", "Impostos"]] as [any, string, string, Section][])
-              .map(([Icon, title, desc, target], i) => (
-                <button key={title} className={"module-tile tile-" + i} onClick={() => onNavigate(target)}><Icon size={24} /><small>{title}</small><strong>{desc}</strong><span>→</span></button>
-              ))}
           </div>
         </div>
         <aside className="dashboard-right">
