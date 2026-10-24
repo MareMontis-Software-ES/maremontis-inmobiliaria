@@ -2,7 +2,7 @@
 // Revisions · Exterior · Interior · Fotos d'inventari.
 // Es fa servir des de «Revisions» (menú) i des de la pestanya Revisions de la fitxa del client.
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarDays, Camera, Check, ClipboardCheck, Home, Mail, Pencil, Plus, Save, Trash2, Trees, X } from "lucide-react";
+import { AlertTriangle, CalendarDays, Camera, Check, CheckCheck, ClipboardCheck, Home, Images, Mail, Pencil, Plus, Save, Trash2, Trees, X } from "lucide-react";
 import { Empty, Notice, Panel } from "../../components/ui";
 import { errorText } from "../../lib/supabase";
 import { fmtDate } from "../../lib/format";
@@ -135,6 +135,8 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
   const [eqObs, setEqObs] = useState<{ ext: string; int: string }>({ ext: "", int: "" });
   const [meters, setMeters] = useState({ water: "", power: "", gas: "" });
   const [mail, setMail] = useState<null | { to: string; cc: string; subject: string; body: string; who: "responsible" | "owner"; from: string; note?: string }>(null);
+  const [pending, setPending] = useState<PendingPhoto[]>([]);
+  const formRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(""); const [ok, setOk] = useState("");
 
   const load = (keep?: string) => listRevisions(c.id).then(r => { setRows(r); setCur(keep ? r.find(x => x.id === keep) || null : null); }).catch(e => setError(errorText(e)));
@@ -153,13 +155,28 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
     const r = newRevision(c.id, rows?.[0], meters, userId, inSeason);
     r.is_extra = extra;
     if (extra) r.revision_number = String((rows || []).filter(x => x.revision_date >= season.start).length + 1);
-    setCur(r); setEditing(true); setOk(""); setError("");
+    setCur(r); setEditing(true); setOk(""); setError(""); clearPending();
+    // al mòbil la llista queda a sobre: es baixa directament al formulari
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
+  function clearPending() { setPending(p => { p.forEach(x => URL.revokeObjectURL(x.url)); return []; }); }
 
   async function save() {
     if (!cur) return;
-    try { const id = await saveRevision(cur); setEditing(false); setOk("Revisió desada."); await load(id); onChanged(); }
-    catch (e) { setError("No s'ha pogut desar: " + errorText(e)); }
+    let id: string;
+    try { id = await saveRevision(cur); }
+    catch (e) { setError("No s'ha pogut desar: " + errorText(e)); return; }
+    // les fotos fetes abans de gravar una revisió nova es pugen ara que ja té número
+    const failed: PendingPhoto[] = [];
+    for (const p of pending) {
+      try { await uploadPhoto(c.id, id, p.file, p.description); URL.revokeObjectURL(p.url); }
+      catch { failed.push(p); }
+    }
+    setPending(failed);
+    setEditing(false);
+    if (failed.length) setError(`Revisió desada, però ${failed.length} foto(s) no s'han pogut pujar. Torna-ho a provar des de «Fotos de la revisió».`);
+    else setOk(pending.length ? `Revisió desada amb ${pending.length} foto(s).` : "Revisió desada.");
+    await load(id); onChanged();
   }
 
   async function prepareMail(who: "responsible" | "owner") {
@@ -200,6 +217,11 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
   const setItem = (key: string, patch: Partial<RevItem>) => setCur(r => ({ ...r!, items: r!.items.some(i => i.key === key) ? r!.items.map(i => i.key === key ? { ...i, ...patch } : i) : [...r!.items, { key, notes: "", notify: false, ...patch }] }));
   const item = (key: string): RevItem => cur?.items.find(i => i.key === key) || { key, notes: "", notify: false, state: "" };
   const ro = !editing;
+  const allGood = () => setCur(r => ({ ...r!, items: [...REV_DINSFORA, ...REV_ESTAT].map(d => {
+    const it = r!.items.find(i => i.key === d.key) || { key: d.key, notes: "", notify: false, state: "" as const };
+    return d.kind === "estat" && !it.state ? { ...it, state: "bon" as const } : it;
+  }) }));
+  const cancel = () => { setEditing(false); clearPending(); setCur(cur?.id ? rows!.find(r => r.id === cur.id)! : null); };
 
   return (
     <div className="tab-pad">
@@ -225,12 +247,12 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
         </Panel>
 
         {cur && (
-          <div className="rev-form">
+          <div className="rev-form" ref={formRef}>
             <section className="data-panel">
               <div className="data-panel-title"><ClipboardCheck size={18} /><strong>{cur.id ? `Revisió del ${fmtDate(cur.revision_date)}` : "Nova revisió"}{cur.is_extra ? " (complementària)" : ""}</strong>
                 <span className="panel-action h3-actions">
                   {canWrite && !editing && <button className="add-small" onClick={() => setEditing(true)}><Pencil size={13} /> Modificar</button>}
-                  {editing && <><button className="add-small" onClick={save}><Save size={13} /> Gravar</button><button className="add-small alt" onClick={() => { setEditing(false); setCur(cur.id ? rows!.find(r => r.id === cur.id)! : null); }}><X size={13} /> Cancel·lar</button></>}
+                  {editing && <><button className="add-small" onClick={save}><Save size={13} /> Gravar</button><button className="add-small alt" onClick={cancel}><X size={13} /> Cancel·lar</button></>}
                 </span>
               </div>
               <div className="data-panel-body">
@@ -249,14 +271,14 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
                       const L = { water: "Aigua", power: "Llum", gas: "Gas" }[k];
                       const prev = cur.id ? (rows || []).find(r => r.revision_date < cur.revision_date || (r.revision_date === cur.revision_date && r.id !== cur.id && Number(r.revision_number) < Number(cur.revision_number)))?.[`${k}_reading`] : cur[`${k}_prev`];
                       return (
-                        <tr key={k}><th>{L}</th>
-                          <td><Toggle on={cur[`${k}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_on`]: v })} /></td>
-                          <td className="muted">{prev || "—"}</td>
-                          <td><input value={cur[`${k}_reading`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_reading`]: e.target.value })} /></td>
-                          <td><input value={cur[`${k}_meter`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_meter`]: e.target.value })} /></td>
+                        <tr key={k} className="rev-reading"><th>{L}</th>
+                          <td className="rev-onoff"><Toggle on={cur[`${k}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_on`]: v })} /></td>
+                          <td className="muted" data-l="Anterior">{prev || "—"}</td>
+                          <td data-l="Lectura actual"><input inputMode="decimal" value={cur[`${k}_reading`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_reading`]: e.target.value })} /></td>
+                          <td data-l="Núm. comptador"><input value={cur[`${k}_meter`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_meter`]: e.target.value })} /></td>
                         </tr>);
                     })}
-                    <tr><th>Data lectura</th><td colSpan={4}><input type="date" value={cur.reading_date} readOnly={ro} onChange={e => setCur({ ...cur, reading_date: e.target.value })} /> <small className="muted">(per a totes)</small></td></tr>
+                    <tr className="rev-reading"><th>Data lectura</th><td colSpan={4}><input type="date" value={cur.reading_date} readOnly={ro} onChange={e => setCur({ ...cur, reading_date: e.target.value })} /> <small className="muted">(per a totes)</small></td></tr>
                   </tbody>
                 </table>
 
@@ -264,39 +286,46 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
                   <thead><tr><th></th><th>OFF/ON</th><th colSpan={2}>Observacions</th><th>Avisar</th></tr></thead>
                   <tbody>
                     {([["alarm", "Alarma"], ["heating", "Calefacció / A.C."]] as const).map(([k, L]) => (
-                      <tr key={k}><th>{L}</th><td><Toggle on={cur[`${k}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_on`]: v })} /></td>
-                        <td colSpan={2}><input value={cur[`${k}_notes`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_notes`]: e.target.value })} /></td>
-                        <td><input type="checkbox" checked={cur[`${k}_notify`]} disabled={ro} onChange={e => setCur({ ...cur, [`${k}_notify`]: e.target.checked })} /></td></tr>))}
+                      <tr key={k} className={"rev-item" + (cur[`${k}_notify`] ? " rev-bad" : "")}><th>{L}</th><td className="rev-onoff"><Toggle on={cur[`${k}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_on`]: v })} /></td>
+                        <td colSpan={2} className="rev-notes"><input placeholder="Observacions" value={cur[`${k}_notes`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_notes`]: e.target.value })} /></td>
+                        <td className="rev-notify"><Chip label="Avisar" tone="warn" on={cur[`${k}_notify`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_notify`]: v })} /></td></tr>))}
                   </tbody>
                 </table>
 
                 <table className="rev-table">
                   <thead><tr><th></th><th>Dins</th><th>Fora</th><th>Observacions</th><th>Avisar</th></tr></thead>
                   <tbody>{REV_DINSFORA.map(d => { const it = item(d.key); return (
-                    <tr key={d.key} className={it.dins || it.fora ? "rev-bad" : ""}><th>{d.label}</th>
-                      <td><input type="checkbox" checked={!!it.dins} disabled={ro} onChange={e => setItem(d.key, { dins: e.target.checked })} /></td>
-                      <td><input type="checkbox" checked={!!it.fora} disabled={ro} onChange={e => setItem(d.key, { fora: e.target.checked })} /></td>
-                      <td><input value={it.notes} readOnly={ro} onChange={e => setItem(d.key, { notes: e.target.value })} /></td>
-                      <td><input type="checkbox" checked={it.notify} disabled={ro} onChange={e => setItem(d.key, { notify: e.target.checked })} /></td></tr>); })}</tbody>
+                    <tr key={d.key} className={"rev-item" + (it.dins || it.fora ? " rev-bad" : "")}><th>{d.label}</th>
+                      <td className="rev-opt"><Chip label="Dins" tone="bad" on={!!it.dins} disabled={ro} onChange={v => setItem(d.key, { dins: v })} /></td>
+                      <td className="rev-opt"><Chip label="Fora" tone="bad" on={!!it.fora} disabled={ro} onChange={v => setItem(d.key, { fora: v })} /></td>
+                      <td className="rev-notes"><input placeholder="Observacions" value={it.notes} readOnly={ro} onChange={e => setItem(d.key, { notes: e.target.value })} /></td>
+                      <td className="rev-notify"><Chip label="Avisar" tone="warn" on={it.notify} disabled={ro} onChange={v => setItem(d.key, { notify: v })} /></td></tr>); })}</tbody>
                 </table>
 
+                {editing && <div className="rev-allgood"><button type="button" className="outline-btn" onClick={allGood}><CheckCheck size={16} /> Marcar com a «Bon» tot el que falta</button></div>}
                 <table className="rev-table">
                   <thead><tr><th></th><th>Bon</th><th>Mal</th><th>Observacions</th><th>Avisar</th></tr></thead>
                   <tbody>{REV_ESTAT.map(d => { const it = item(d.key); return (
-                    <tr key={d.key} className={it.state === "mal" ? "rev-bad" : ""}><th>{d.label}</th>
-                      <td><input type="radio" name={"st-" + d.key} checked={it.state === "bon"} disabled={ro} onChange={() => setItem(d.key, { state: "bon" })} /></td>
-                      <td><input type="radio" name={"st-" + d.key} checked={it.state === "mal"} disabled={ro} onChange={() => setItem(d.key, { state: "mal" })} /></td>
-                      <td className="rev-obs">
-                        {d.extra === "encarregar" && <label className="chk-inline"><input type="checkbox" checked={!!it.extra} disabled={ro} onChange={e => setItem(d.key, { extra: e.target.checked })} /> Encarregar</label>}
-                        {d.extra === "falta_sal" && <label className="chk-inline"><input type="checkbox" checked={!!it.extra} disabled={ro} onChange={e => setItem(d.key, { extra: e.target.checked })} /> Falta sal?</label>}
+                    <tr key={d.key} className={"rev-item" + (it.state === "mal" ? " rev-bad" : "")}><th>{d.label}</th>
+                      <td className="rev-opt"><Chip label="Bon" tone="good" on={it.state === "bon"} disabled={ro} onChange={v => setItem(d.key, { state: v ? "bon" : "" })} /></td>
+                      <td className="rev-opt"><Chip label="Mal" tone="bad" on={it.state === "mal"} disabled={ro} onChange={v => setItem(d.key, { state: v ? "mal" : "" })} /></td>
+                      <td className="rev-obs rev-notes">
+                        {d.extra === "encarregar" && <Chip label="Encarregar" tone="warn" on={!!it.extra} disabled={ro} onChange={v => setItem(d.key, { extra: v })} />}
+                        {d.extra === "falta_sal" && <Chip label="Falta sal" tone="warn" on={!!it.extra} disabled={ro} onChange={v => setItem(d.key, { extra: v })} />}
                         {d.extra === "caducitat" && <label className="chk-inline">Caducitat <input type="month" value={typeof it.extra === "string" ? it.extra : ""} readOnly={ro} onChange={e => setItem(d.key, { extra: e.target.value })} /></label>}
-                        <input value={it.notes} readOnly={ro} onChange={e => setItem(d.key, { notes: e.target.value })} />
+                        <input placeholder="Observacions" value={it.notes} readOnly={ro} onChange={e => setItem(d.key, { notes: e.target.value })} />
                       </td>
-                      <td><input type="checkbox" checked={it.notify} disabled={ro} onChange={e => setItem(d.key, { notify: e.target.checked })} /></td></tr>); })}</tbody>
+                      <td className="rev-notify"><Chip label="Avisar" tone="warn" on={it.notify} disabled={ro} onChange={v => setItem(d.key, { notify: v })} /></td></tr>); })}</tbody>
                 </table>
                 <label className="f f-wide"><span>Altres observacions</span><textarea rows={3} value={cur.other_observations} readOnly={ro} onChange={e => setCur({ ...cur, other_observations: e.target.value })} /></label>
+                {editing && !cur.id && <PendingPhotos items={pending} onChange={setPending} />}
               </div>
+              {editing && <div className="rev-savebar">
+                <button className="save-btn" onClick={save}><Save size={18} /> Gravar{pending.length ? ` (+${pending.length} foto${pending.length > 1 ? "s" : ""})` : " revisió"}</button>
+                <button className="cancel-btn" onClick={cancel}><X size={18} /> Cancel·lar</button>
+              </div>}
             </section>
+            {cur.id && editing && <PhotosPanel propertyId={c.id} revisionId={cur.id} canWrite={canWrite} title="Fotos de la revisió" />}
 
             {cur.id && !editing && (
               <>
@@ -336,6 +365,10 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
   );
 }
 
+function Chip({ on, label, onChange, disabled, tone }: { on: boolean; label: string; onChange: (v: boolean) => void; disabled?: boolean; tone?: "good" | "bad" | "warn" }) {
+  return <button type="button" className={"chip-btn" + (tone ? " " + tone : "") + (on ? " on" : "")} aria-pressed={on} disabled={disabled} onClick={() => onChange(!on)}>{label}</button>;
+}
+
 function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return <button type="button" className={"toggle" + (on ? " on" : "")} disabled={disabled} onClick={() => onChange(!on)}><span />{on ? "ON" : "OFF"}</button>;
 }
@@ -348,7 +381,6 @@ function PhotosPanel({ propertyId, revisionId, canWrite, title }: { propertyId: 
   const [desc, setDesc] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const input = useRef<HTMLInputElement>(null);
   const load = () => listPhotos(propertyId, revisionId).then(setRows).catch(e => { setRows([]); setError(errorText(e)); });
   useEffect(() => { void load(); }, [propertyId, revisionId]);
 
@@ -357,19 +389,13 @@ function PhotosPanel({ propertyId, revisionId, canWrite, title }: { propertyId: 
     setBusy(true); setError("");
     try { for (const f of Array.from(files)) await uploadPhoto(propertyId, revisionId, f, desc.trim() || f.name.replace(/\.[^.]+$/, "")); setDesc(""); await load(); }
     catch (e) { setError("No s'ha pogut pujar: " + errorText(e)); }
-    finally { setBusy(false); if (input.current) input.current.value = ""; }
+    finally { setBusy(false); }
   }
 
   return (
     <Panel title={title} icon={Camera}>
       {error && <Notice kind="error">{error}</Notice>}
-      {canWrite && (
-        <div className="photo-add">
-          <input placeholder="Nom descriptiu (p. ex. «Humitat paret dormitori»)" value={desc} onChange={e => setDesc(e.target.value)} />
-          <label className="save-btn">{busy ? "Pujant…" : <><Camera size={15} /> Afegir fotos</>}
-            <input ref={input} type="file" accept="image/*" multiple capture="environment" hidden onChange={e => upload(e.target.files)} /></label>
-        </div>
-      )}
+      {canWrite && <PhotoPicker desc={desc} setDesc={setDesc} busy={busy} onFiles={upload} />}
       {!rows ? <Empty>Carregant…</Empty> : !rows.length ? <Empty>Encara no hi ha fotos.{revisionId ? " Se n'aconsella almenys una per revisió." : ""}</Empty> : (
         <div className="photo-grid">
           {rows.map(p => (
@@ -384,5 +410,53 @@ function PhotosPanel({ propertyId, revisionId, canWrite, title }: { propertyId: 
         </div>
       )}
     </Panel>
+  );
+}
+
+/** Nom descriptiu + «Fer foto» (obre la càmera del mòbil o la tauleta) + «Galeria» (fotos ja fetes, vàries alhora) */
+function PhotoPicker({ desc, setDesc, busy, onFiles }: { desc: string; setDesc: (v: string) => void; busy?: boolean; onFiles: (f: FileList | null) => void }) {
+  const cam = useRef<HTMLInputElement>(null), gal = useRef<HTMLInputElement>(null);
+  const pick = (el: HTMLInputElement) => { onFiles(el.files); el.value = ""; };
+  return (
+    <div className="photo-add">
+      <input placeholder="Nom descriptiu (p. ex. «Humitat paret dormitori»)" value={desc} onChange={e => setDesc(e.target.value)} />
+      <div className="photo-btns">
+        <button type="button" className="save-btn" disabled={busy} onClick={() => cam.current?.click()}><Camera size={18} /> {busy ? "Pujant…" : "Fer foto"}</button>
+        <button type="button" className="cancel-btn" disabled={busy} onClick={() => gal.current?.click()}><Images size={18} /> Galeria</button>
+      </div>
+      <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={e => pick(e.target)} />
+      <input ref={gal} type="file" accept="image/*" multiple hidden onChange={e => pick(e.target)} />
+    </div>
+  );
+}
+
+// Fotos fetes durant una revisió nova (encara sense gravar): es guarden al dispositiu i es pugen en gravar
+interface PendingPhoto { file: File; url: string; description: string }
+
+function PendingPhotos({ items, onChange }: { items: PendingPhoto[]; onChange: (v: PendingPhoto[]) => void }) {
+  const [desc, setDesc] = useState("");
+  const add = (files: FileList | null) => {
+    if (!files?.length) return;
+    onChange([...items, ...Array.from(files).map(f => ({ file: f, url: URL.createObjectURL(f), description: desc.trim() || f.name.replace(/\.[^.]+$/, "") }))]);
+    setDesc("");
+  };
+  return (
+    <div className="pending-photos">
+      <strong><Camera size={15} /> Fotos de la revisió</strong>
+      <PhotoPicker desc={desc} setDesc={setDesc} onFiles={add} />
+      {items.length ? (
+        <div className="photo-grid">
+          {items.map((p, i) => (
+            <figure key={p.url}>
+              <img src={p.url} alt={p.description} />
+              <figcaption>
+                <input value={p.description} onChange={e => onChange(items.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
+                <button className="icon-del" title="Treure" onClick={() => { URL.revokeObjectURL(p.url); onChange(items.filter((_, j) => j !== i)); }}><Trash2 size={13} /></button>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      ) : <p className="hint">Les fotos es pujaran en gravar la revisió.</p>}
+    </div>
   );
 }

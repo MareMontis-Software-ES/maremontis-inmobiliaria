@@ -50,4 +50,4 @@ supabase/esborrar_dades_prova.sql  esborra les dades d'exemple («DADES DE PROVA
 5. Enviament de correus directe (sense obrir Outlook) i amb fotos adjuntes → servei SMTP + funció al servidor.
 6. ~~Que el tipus de contracte amagui les funcions que no inclou~~ (fet: `contractFeatures()` a `src/data/admin.ts`; sense contracte, tot habilitat).
 7. Migració de les dades reals del programa antic.
-8. Provar la pujada de fotos amb el Supabase real (bucket `fotos`).
+8. ~~Provar la pujada de fotos amb el Supabase real~~ (permisos del bucket `fotos` provats; falta una prova des d'un mòbil real).
