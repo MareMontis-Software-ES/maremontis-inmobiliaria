@@ -6,6 +6,7 @@ import { FieldGrid } from "../../components/FieldGrid";
 import { CheckInput, Empty, Notice, Panel } from "../../components/ui";
 import { emptyTax, listTaxes, saveTax, taxCalc, TAX_FIELDS, type TaxForm } from "../../data/finques";
 import { errorText } from "../../lib/supabase";
+import { HistoryButton } from "../../components/HistoryButton";
 
 const money = (n: number) => n.toLocaleString("ca-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
@@ -62,9 +63,11 @@ export function TaxesTab({ propertyId, ownership, canWrite }: { propertyId: stri
           {editing ? <>
             <button className="save-btn" onClick={save} disabled={saving}><Save size={16} /> {saving ? "Desant…" : "Gravar"}</button>
             <button className="cancel-btn" disabled={saving} onClick={() => { setEditing(false); setError(""); if (sel === -1) { setSel(0); setForm(rows[0] ? { ...rows[0] } : null); } else setForm({ ...rows[sel] }); }}><X size={16} /> Cancel·lar</button>
-          </> : <button className="save-btn" onClick={() => setEditing(true)}><Pencil size={16} /> Modificar impostos {form.tax_year}</button>}
+          </> : <><button className="save-btn" onClick={() => setEditing(true)}><Pencil size={16} /> Modificar impostos {form.tax_year}</button>
+            <HistoryButton scope={{ propertyId, tables: ["property_taxes"] }} title="Historial de canvis · impostos de la finca" /></>}
         </div>
       )}
+      {!canWrite && form && <div className="tab-actions"><HistoryButton scope={{ propertyId, tables: ["property_taxes"] }} title="Historial de canvis · impostos de la finca" /></div>}
       {!form ? <Panel title="Impostos" icon={Landmark}><Empty>Aquesta finca encara no té impostos registrats.{canWrite && " Prem «Any nou» per començar."}</Empty></Panel> : (
         <div className="finca-columns">
           <div className="column-stack">

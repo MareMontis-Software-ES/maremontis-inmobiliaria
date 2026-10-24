@@ -12,6 +12,7 @@ import { TaxesTab } from "../finques/TaxesTab";
 import { KeysTab } from "../finques/KeysTab";
 import { CaseView } from "../cases/CaseView";
 import { IncidentsView } from "../incidents/IncidentsView";
+import { HistoryButton } from "../../components/HistoryButton";
 import type { ClientFull, ContractFeatures, Profile, PropertyLink } from "../../types";
 
 export const CLIENT_TABS = [
@@ -182,6 +183,7 @@ export function ClientDetail(p: Props) {
         <div>
           {p.canWrite && <button className="save-btn" onClick={p.onEdit}><Pencil size={17} /> Modificar client</button>}
           {p.canWrite && <button className="cancel-btn" onClick={p.onToggleStatus}><Power size={17} /> {c.status === "inactive" ? "Reactivar client" : "Donar de baixa client"}</button>}
+          {c.id && <HistoryButton scope={{ clientId: c.id }} title={`Historial de canvis · ${fullName(c.first_name, c.last_name)}`} />}
           <button className="cancel-btn" onClick={p.onBack}><X size={17} /> Tornar a la llista</button>
         </div>
         <div>
