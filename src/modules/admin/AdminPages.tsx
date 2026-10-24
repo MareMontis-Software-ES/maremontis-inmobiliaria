@@ -1,13 +1,15 @@
 // Pantalles de manteniment: Contractes, Industrials i Configuració (usuaris, zones, textos de correu).
 // Totes segueixen el mateix patró: llista a l'esquerra, fitxa a la dreta.
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, FileText, Mail, MapPin, Plus, Save, Users, Wrench, X } from "lucide-react";
+import { Check, Download, FileText, Mail, MapPin, Plus, Save, Users, Wrench, X } from "lucide-react";
 import { CheckInput, Empty, Notice, Panel, SelectInput, TextArea, TextInput } from "../../components/ui";
 import { errorText } from "../../lib/supabase";
 import { LANGUAGES } from "../../lib/constants";
 import { CONTRACT_FLAGS, emptyContractType, emptyIndustrial, listContractTypes, listIndustrialsFull, listProfiles, listTemplates, listZones,
   saveContractType, saveIndustrial, saveProfile, saveTemplate, saveZone, TEMPLATE_KINDS, TRADES,
   type ContractType, type Industrial, type ProfileRow, type Template } from "../../data/admin";
+import { backupFileName, buildBackupSheets } from "../../data/backup";
+import { downloadXlsx } from "../../lib/xlsx";
 
 function PageHead({ kicker, title, text, action }: { kicker: string; title: string; text: string; action?: ReactNode }) {
   return <div className="page-title"><div><small>{kicker}</small><h1>{title}</h1><p>{text}</p></div>{action}</div>;
@@ -121,19 +123,19 @@ export function IndustrialsPage({ canWrite }: { canWrite: boolean }) {
 }
 
 // =====================================================================
-// CONFIGURACIÓ: usuaris, zones, textos de correu
+// CONFIGURACIÓ: usuaris, zones, textos de correu, còpia de seguretat
 // =====================================================================
 export function ConfigPage({ isAdmin }: { isAdmin: boolean }) {
-  const [tab, setTab] = useState<"usuaris" | "zones" | "textos">("usuaris");
+  const [tab, setTab] = useState<"usuaris" | "zones" | "textos" | "copia">("usuaris");
   return (
     <div className="work-area list-view">
-      <PageHead kicker="ADMINISTRACIÓ" title="Configuració" text={isAdmin ? "Usuaris i permisos, zones i textos dels correus als propietaris." : "Només els administradors poden canviar la configuració."} />
+      <PageHead kicker="ADMINISTRACIÓ" title="Configuració" text={isAdmin ? "Usuaris i permisos, zones, textos dels correus als propietaris i còpia de seguretat." : "Només els administradors poden canviar la configuració."} />
       <div className="record-tabs">
-        {([["usuaris", "Usuaris i permisos", Users], ["zones", "Zones", MapPin], ["textos", "Textos de correu", Mail]] as const).map(([id, l, I]) =>
+        {([["usuaris", "Usuaris i permisos", Users], ["zones", "Zones", MapPin], ["textos", "Textos de correu", Mail], ["copia", "Còpia de seguretat", Download]] as const).map(([id, l, I]) =>
           <button key={id} className={tab === id ? "selected" : ""} onClick={() => setTab(id)}><I size={17} /><span>{l}</span></button>)}
       </div>
       <div className="tab-pad">
-        {tab === "usuaris" ? <UsersTab isAdmin={isAdmin} /> : tab === "zones" ? <ZonesTab isAdmin={isAdmin} /> : <TemplatesTab isAdmin={isAdmin} />}
+        {tab === "usuaris" ? <UsersTab isAdmin={isAdmin} /> : tab === "zones" ? <ZonesTab isAdmin={isAdmin} /> : tab === "textos" ? <TemplatesTab isAdmin={isAdmin} /> : <BackupTab isAdmin={isAdmin} />}
       </div>
     </div>
   );
@@ -227,5 +229,33 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
         </Panel>
       )}
     </div>
+  );
+}
+
+function BackupTab({ isAdmin }: { isAdmin: boolean }) {
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const [ok, setOk] = useState("");
+
+  async function run() {
+    setError(""); setOk(""); setBusy("Preparant…");
+    try {
+      const { sheets, failed } = await buildBackupSheets((label, done, total) => setBusy(label ? `Llegint ${label} (${done + 1} de ${total})…` : "Generant l'Excel…"));
+      const name = backupFileName();
+      downloadXlsx(name, sheets);
+      setOk(`Descarregat «${name}».` + (failed.length ? ` No s'han pogut llegir: ${failed.join(", ")} (vegeu el full «Resum»).` : ""));
+    } catch (e) { setError(errorText(e)); }
+    setBusy("");
+  }
+
+  return (
+    <Panel title="Còpia de seguretat en Excel" icon={Download}>
+      {error && <Notice kind="error">{error}</Notice>}
+      {ok && <Notice kind="ok">{ok}</Notice>}
+      <p className="hint">Descarrega totes les dades del programa en un sol fitxer Excel: un full per taula (clients, finques, impostos, claus, alertes, incidències, revisions…) i un full «Resum» amb el nombre de files de cadascuna. Només llegeix: no canvia res de la base de dades. Les fotos no s'hi inclouen.</p>
+      {isAdmin
+        ? <div className="tab-actions inline"><button className="save-btn" disabled={!!busy} onClick={run}><Download size={16} /> {busy || "Descarregar còpia (.xlsx)"}</button></div>
+        : <p className="hint">Només els administradors poden descarregar la còpia de seguretat.</p>}
+    </Panel>
   );
 }
