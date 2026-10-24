@@ -284,6 +284,35 @@
 .dirty-dot{width:8px;height:8px;border-radius:50%;background:#c28b38;flex:0 0 auto}
 .clients-tabs-host .list-view{padding-top:16px}
 
+/* --- Estadístiques --- */
+.stats-page{padding-bottom:24px}
+.stats-heading{font-size:15px;color:#174c40;margin:6px 0 12px}
+.stats-year-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px}
+.stats-year-bar label{display:flex;align-items:center;gap:8px;font-size:12px;color:#384a40}
+.stats-year-bar select{height:32px;border:1px solid #ddd5c4;border-radius:4px;background:#faf7f0;padding:0 8px;font:inherit;font-size:12px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+.stat-figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin-bottom:6px}
+.stat-figure{display:flex;flex-direction:column;gap:2px}
+.stat-figure strong{font-size:24px;color:#152f27;font-variant-numeric:tabular-nums}
+.stat-figure span{font-size:11px;color:#384a40}
+.stat-figure small{font-size:10px;color:#7d8178}
+.bar-list{display:grid;gap:6px}
+.bar-row{display:grid;grid-template-columns:minmax(80px,38%) minmax(0,1fr) 36px;align-items:center;gap:8px;font-size:11px;color:#384a40}
+.bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{height:12px;display:block}
+.bar-track i{display:block;height:100%;min-width:2px;background:#2f6f5e;border-radius:0 4px 4px 0}
+.bar-row:hover .bar-track i{background:#174c40}
+.bar-row strong{text-align:right;color:#152f27;font-variant-numeric:tabular-nums}
+.month-bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;height:120px;margin:10px 0}
+.month-bars>div{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.month-bars small{font-size:10px;color:#384a40;height:12px;font-variant-numeric:tabular-nums}
+.month-bars span{flex:1;width:70%;display:flex;align-items:flex-end;border-bottom:1px solid #d8cfbd}
+.month-bars i{display:block;width:100%;background:#2f6f5e;border-radius:4px 4px 0 0}
+.month-bars>div:hover i{background:#174c40}
+.month-bars em{font-style:normal;font-size:10px;color:#7d8178}
+.stats-table td{padding:8px 10px;white-space:normal}
+.stats-table th{padding:8px 10px}
+
 /* --- Revisió: botons tàctils (Bon/Mal, Dins/Fora, Avisar) i fotos amb la càmera --- */
 .chip-btn{min-width:46px;height:26px;padding:0 10px;border:1px solid #cfc7b6;border-radius:13px;background:#f7f3ea;color:#4d5a52;font-size:11px;font-weight:700;white-space:nowrap}
 .chip-btn:disabled{cursor:default}

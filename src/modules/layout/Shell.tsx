@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, Bell, Building2, CalendarDays, ChevronRight, FileText, House, KeyRound, Landmark, LogOut, Settings, UserRound, Users, Wrench } from "lucide-react";
+import { AlertTriangle, BarChart3, Bell, Building2, CalendarDays, ChevronRight, FileText, House, KeyRound, Landmark, LogOut, Settings, UserRound, Users, Wrench } from "lucide-react";
 import type { Profile, Section } from "../../types";
 import type { SearchHit } from "../../data/search";
 import { GlobalSearch } from "./GlobalSearch";
@@ -16,6 +16,7 @@ const NAV: [Section, any, boolean][] = [
   ["Contractes", FileText, false],
   ["Industrials", Wrench, false],
   ["Impostos", Landmark, false],
+  ["Estadístiques", BarChart3, false],
 ];
 
 const ROLE_LABEL = { admin: "Administrador", oficina: "Oficina", consulta: "Només consulta" };
