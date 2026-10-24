@@ -2,6 +2,7 @@
 // llistat amb pròxima revisió, fitxes exterior/interior, revisions, fotos i correus.
 import { supabase } from "../lib/supabase";
 import { fullName, s, todayISO } from "../lib/format";
+import { shrinkImage } from "../lib/images";
 
 type Row = Record<string, any>;
 
@@ -347,12 +348,13 @@ export async function listPhotos(propertyId: string, revisionId: string | null):
   return rows.map((r, i) => ({ ...r, url: urls?.[i]?.signedUrl || "" }));
 }
 
-export async function uploadPhoto(propertyId: string, revisionId: string | null, file: File, description: string) {
+export async function uploadPhoto(propertyId: string, revisionId: string | null, original: File, description: string) {
+  const file = await shrinkImage(original);
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${propertyId}/${revisionId || "inventari"}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
   const up = await supabase.storage.from("fotos").upload(path, file, { contentType: file.type || "image/jpeg" });
   if (up.error) throw up.error;
-  const { error } = await supabase.from("property_photos").insert({ property_id: propertyId, revision_id: revisionId, storage_path: path, description: description || file.name });
+  const { error } = await supabase.from("property_photos").insert({ property_id: propertyId, revision_id: revisionId, storage_path: path, description: description || original.name });
   if (error) throw error;
 }
 
