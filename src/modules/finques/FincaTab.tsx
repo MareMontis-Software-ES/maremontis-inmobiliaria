@@ -127,6 +127,8 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
               {form.id && <HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.admin_number} ${form.address}`} />}
             </>
           )}
+        </div>
+      )}
       {!canWrite && form.id && <div className="tab-actions"><HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.admin_number} ${form.address}`} /></div>}
       {form.status === "baixa" && <Notice kind="error">Finca <strong>donada de baixa</strong> el {fmtDate(form.baixa_date)}. Es conserva per a l'històric i el model 210.</Notice>}
       {isNew && <Notice>Alta de finca nova per a aquest client. El núm. d'administració proposat és el primer armari lliure.</Notice>}
@@ -176,9 +178,6 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
           ))}
         </div>
       </div>
-
-        </div>
-      )}
     </div>
   );
 }
