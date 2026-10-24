@@ -19,6 +19,7 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 |---|---|---|---|
 | Entrada / usuari i clau | — | Login segur amb usuaris i permisos (admin / oficina / consulta) | ✅ |
 | Relació clients/immobles | Alertes visibles des de qualsevol pestanya | Llista de clients + fitxa amb panell d'alertes sempre visible | ✅ |
+| Buscador general (barra de dalt) | — (millora nova) | Busca a la vegada clients (nom, codi, 430…, DNI/NIE/passaport, telèfon, e-mail), finques (adreça, nom AEAT, núm. d'administració), matrícules i cònjuges/copropietaris; sense tenir en compte accents. Resultats agrupats; en triar-ne un s'obre directament la fitxa (la finca dins la fitxa del titular; la matrícula i el cònjuge a la seva pestanya). Fletxes + Enter. Funció `global_search` (respecta els permisos) | ✅ |
 | Alta client | Responsable assignat; tipus de via desplegable; varis telèfons (tipus, prefix) i e-mails (tipus); codi sense 430 | Tot inclòs; subcompte 430 automàtic; validació DNI/NIE | ✅ |
 | Alta client | Camp «Documental» (ruta) | Inclòs | ✅ |
 | Alta immoble | Núm. administració = armari de claus; en donar de baixa queda lliure | Proposa el primer número lliure; avisa si està ocupat; reutilitza els de baixes | ✅ |
