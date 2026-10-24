@@ -13,6 +13,7 @@ import { listIndustrialsFull, type Industrial } from "../../data/admin";
 import { profilePick } from "../../data/global";
 import { saveIncident } from "../../data/incidents";
 import { buildRevisionPdf, reportFileName } from "./revisionReport";
+import { mailLang } from "../../data/revisionI18n";
 
 type Sub = "revisions" | "exterior" | "interior" | "fotos";
 
@@ -196,10 +197,14 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
       } else {
         // PDF pàg. 18: al propietari, al seu correu i en el seu idioma
         const tpl = issues.length ? ctx.tplIssues : ctx.tplOk;
-        const fill = (t: string) => t.replace(/{{finca}}/g, c.address).replace(/{{data}}/g, fmtDate(cur.revision_date)).replace(/{{client}}/g, c.client_name).replace(/{{incidencies}}/g, issues.map(i => "- " + i).join("\n"));
+        const ownerIssues = revisionIssues(cur, mailLang(tpl?.language || "en"));
+        const fill = (t: string) => t.replace(/{{finca}}/g, c.address).replace(/{{data}}/g, fmtDate(cur.revision_date)).replace(/{{client}}/g, c.client_name).replace(/{{incidencies}}/g, ownerIssues.map(i => "- " + i).join("\n"));
         setMail({ who, from: ctx.responsibleEmail, to: ctx.clientEmails[0] || "", cc: "", subject: tpl ? fill(tpl.subject) : subject,
           body: tpl ? fill(tpl.body) : `Revisió ${fmtDate(cur.revision_date)}\n\n`,
-          note: !tpl ? "No hi ha cap text de correu creat (Configuració → Textos de correu)." : ctx.usedLanguage !== (c.language || "en") ? `No hi ha text en l'idioma del client (${c.language || "—"}); s'usa l'anglès.` : undefined });
+          note: [!tpl ? `No hi ha cap text de correu per a ${issues.length ? "revisions amb incidències" : "revisions correctes"} (Configuració → Textos de correu).`
+              : tpl.language !== (c.language || "en") ? `No hi ha text en l'idioma del client (${c.language || "—"}); s'usa l'anglès.` : "",
+            tpl && tpl.reviewed === false ? "Atenció: aquest text és una traducció encara PENDENT DE REVISAR. Llegeix-lo bé abans d'enviar-lo." : "",
+            issues.length ? "Els noms dels elements es tradueixen a l'idioma del text; les observacions surten tal com s'han escrit." : ""].filter(Boolean).join(" ") || undefined });
       }
     } catch (e) { setError(errorText(e)); }
   }
