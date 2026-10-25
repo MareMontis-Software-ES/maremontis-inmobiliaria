@@ -238,3 +238,8 @@
 @media(max-width:850px){.brand-logo{max-width:58px}.brand>small{display:none}}
 /* El menú lateral es queda quiet mentre es desplaça el contingut */
 .sidebar{position:sticky;top:0;height:100vh;min-height:0;overflow-y:auto;align-self:flex-start}
+/* Capçalera de l'Inici: mateixa lletra sense serifa que la resta de l'app */
+.welcome-copy small,.welcome-copy h1,.welcome-copy p,.welcome-date{font-family:Inter,"Segoe UI",Arial,sans-serif}
+.welcome-copy h1{font-size:28px;font-weight:600;letter-spacing:-.4px}.welcome-copy p{font-size:13px;opacity:.95}.welcome-copy small{font-size:10px;font-weight:600;letter-spacing:1.6px}
+.welcome-date{background:rgba(12,40,32,.38);font-size:11px;text-shadow:0 1px 3px #0b2a2199}
+.welcome-copy{display:flex;flex-direction:column;justify-content:center}

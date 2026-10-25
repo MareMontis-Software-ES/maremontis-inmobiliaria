@@ -130,7 +130,7 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
       <div className="dashboard-layout">
         <div className="dashboard-main">
           <section className="welcome-banner">
-            <div className="welcome-copy"><small>MAREMONTIS</small><h1>{greeting}{userName ? `, ${userName}` : ""}</h1><p>Aquí tens el resum de l'activitat d'avui.</p></div>
+            <div className="welcome-copy"><h1>{greeting}{userName ? `, ${userName}` : ""}</h1><p>Aquí tens el resum de l'activitat d'avui.</p></div>
             <div className="welcome-date">{DAYS[now.getDay()][0].toUpperCase() + DAYS[now.getDay()].slice(1)},<br /><strong>{now.getDate()} de {MONTHS[now.getMonth()]} de {now.getFullYear()}</strong></div>
           </section>
           {error && <Notice kind="error">No s'han pogut carregar les dades: {error}</Notice>}
