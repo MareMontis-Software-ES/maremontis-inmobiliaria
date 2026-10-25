@@ -12,8 +12,8 @@ export interface AlertRow {
 }
 
 export async function listAllAlerts(): Promise<AlertRow[]> {
-  const { data, error } = await supabase.from("alerts_visible")
-    .select("*, clients(first_name, last_name), properties(street_type, address)")
+  const { data, error } = await supabase.from("admi_alerts_overview")
+    .select("*, clients:admi_clients(first_name, last_name), properties:admi_properties(street_type, address)")
     .order("due_date", { ascending: true, nullsFirst: false });
   if (error) throw error;
   return (data || []).map((a: Row) => ({
@@ -58,9 +58,9 @@ export interface KeyRow {
 }
 
 export async function listAllKeys(): Promise<KeyRow[]> {
-  const { data, error } = await supabase.from("key_movements")
-    .select(`*, industrials(name), profiles:delivered_by(full_name),
-             properties(admin_number, street_type, address, property_owners(client_id, is_main, clients(first_name, last_name)))`)
+  const { data, error } = await supabase.from("admi_key_movements")
+    .select(`*, industrials:admi_tradespeople(name), profiles:delivered_by(full_name),
+             properties:admi_properties(admin_number, street_type, address, property_owners:admi_property_owners(client_id, is_main, clients:admi_clients(first_name, last_name)))`)
     .order("delivered_at", { ascending: false }).limit(500);
   if (error) throw error;
   const today = todayISO();
@@ -81,8 +81,8 @@ export async function listAllKeys(): Promise<KeyRow[]> {
 // ---------------- Selectors ----------------
 export interface PropertyPick { id: string; label: string; admin_number: number; client_id: string | null; client_name: string; key_office: string; key_custody: boolean }
 export async function propertyPickList(): Promise<PropertyPick[]> {
-  const { data, error } = await supabase.from("properties")
-    .select(`id, admin_number, street_type, address, municipality, key_office, ${CONTRACT_SELECT}, property_owners(client_id, is_main, clients(first_name, last_name))`)
+  const { data, error } = await supabase.from("admi_properties")
+    .select(`id, admin_number, street_type, address, municipality, key_office, ${CONTRACT_SELECT}, property_owners:admi_property_owners(client_id, is_main, clients:admi_clients(first_name, last_name))`)
     .eq("status", "active").order("admin_number");
   if (error) throw error;
   return (data || []).map((p: Row) => {
@@ -96,7 +96,7 @@ export async function propertyPickList(): Promise<PropertyPick[]> {
 }
 
 export async function profilePick(): Promise<{ id: string; name: string; email: string }[]> {
-  const { data, error } = await supabase.from("profiles").select("id, full_name, email").eq("active", true).order("full_name");
+  const { data, error } = await supabase.from("admi_users").select("id, full_name, email").eq("active", true).order("full_name");
   if (error) throw error;
   return (data || []).map((p: Row) => ({ id: p.id, name: s(p.full_name) || s(p.email), email: s(p.email) }));
 }

@@ -50,10 +50,10 @@ export interface PortfolioStats {
 
 export async function portfolioStats(): Promise<PortfolioStats> {
   const [clients, properties, zones, taxYears] = await Promise.all([
-    fetchAll("clients", "status, resident, language, deactivated_at, client_addresses(country)"),
-    fetchAll("properties", "status, baixa_date, zone, municipality, rental_use, contract_type_id, contract_types(description)"),
-    fetchAll("zones", "code, name"),
-    fetchAll("property_taxes", "tax_year"),
+    fetchAll("admi_clients", "status, resident, language, deactivated_at, client_addresses:admi_client_addresses(country)"),
+    fetchAll("admi_properties", "status, baixa_date, zone, municipality, rental_use, contract_type_id, contract_types:admi_contract_types(description)"),
+    fetchAll("admi_zones", "code, name"),
+    fetchAll("admi_property_taxes", "tax_year"),
   ]);
   const activeClients = clients.filter(c => c.status === "active");
   const activeProps = properties.filter(p => p.status === "active");
@@ -107,12 +107,12 @@ export async function yearStats(year: number): Promise<YearStats> {
   const from = `${year}-01-01`, to = `${year + 1}-01-01`;
   const between = (col: string) => (q: any) => q.gte(col, from).lt(col, to);
   const [revisions, incidents, notes, alerts, keys, taxes] = await Promise.all([
-    fetchAll("revisions", "property_id, revision_date, is_extra", between("revision_date")),
-    fetchAll("incidents", "incident_date, status", between("incident_date")),
-    fetchAll("service_notes", "created_at, status", between("created_at")),
-    fetchAll("alerts", "created_at, completed_at", between("created_at")),
-    fetchAll("key_movements", "delivered_at, returned_at", between("delivered_at")),
-    fetchAll("property_taxes", "paid, ibi_quota, rent_quota, taxable_base", q => q.eq("tax_year", year)),
+    fetchAll("admi_property_revisions", "property_id, revision_date, is_extra", between("revision_date")),
+    fetchAll("admi_incidents", "incident_date, status", between("incident_date")),
+    fetchAll("admi_service_notes", "created_at, status", between("created_at")),
+    fetchAll("admi_alerts", "created_at, completed_at", between("created_at")),
+    fetchAll("admi_key_movements", "delivered_at, returned_at", between("delivered_at")),
+    fetchAll("admi_property_taxes", "paid, ibi_quota, rent_quota, taxable_base", q => q.eq("tax_year", year)),
   ]);
   const perMonth = (rows: Row[], col: string) => {
     const m = Array(12).fill(0);

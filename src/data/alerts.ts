@@ -14,8 +14,8 @@ function toAlert(a: Row): Alert {
 
 /** Alertes visibles (pendents + completades dels últims 6 mesos). */
 export async function listAlerts(opts: { clientId?: string; onlyPending?: boolean; limit?: number } = {}): Promise<Alert[]> {
-  let q = supabase.from("alerts_visible")
-    .select("*, clients(first_name, last_name)")
+  let q = supabase.from("admi_alerts_overview")
+    .select("*, clients:admi_clients(first_name, last_name)")
     .order("completed_at", { ascending: true, nullsFirst: true })
     .order("due_date", { ascending: true, nullsFirst: false });
   if (opts.clientId) q = q.eq("client_id", opts.clientId);
@@ -27,7 +27,7 @@ export async function listAlerts(opts: { clientId?: string; onlyPending?: boolea
 }
 
 export async function createAlert(input: { client_id?: string; property_id?: string; title: string; content?: string; due_date?: string; checklist?: { text: string; done: boolean }[] }) {
-  const { error } = await supabase.from("alerts").insert({
+  const { error } = await supabase.from("admi_alerts").insert({
     client_id: input.client_id || null,
     property_id: input.property_id || null,
     title: input.title,
@@ -39,12 +39,12 @@ export async function createAlert(input: { client_id?: string; property_id?: str
 }
 
 export async function updateAlert(id: string, patch: Partial<Pick<Alert, "title" | "content" | "due_date" | "checklist">>) {
-  const { error } = await supabase.from("alerts").update(patch).eq("id", id);
+  const { error } = await supabase.from("admi_alerts").update(patch).eq("id", id);
   if (error) throw error;
 }
 
 export async function completeAlert(id: string, userId: string | undefined, done = true) {
-  const { error } = await supabase.from("alerts")
+  const { error } = await supabase.from("admi_alerts")
     .update({ completed_at: done ? new Date().toISOString() : null, completed_by: done ? userId || null : null })
     .eq("id", id);
   if (error) throw error;

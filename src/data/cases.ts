@@ -87,7 +87,7 @@ export interface CaseRow {
 }
 
 export async function listCases(): Promise<CaseRow[]> {
-  const { data, error } = await supabase.from("cases_overview").select("*").eq("status", "active").order("address");
+  const { data, error } = await supabase.from("admi_revisions_overview").select("*").eq("status", "active").order("address");
   if (error) throw error;
   return (data || []).map((c: Row) => {
     const row: CaseRow = {
@@ -105,7 +105,7 @@ export async function listCases(): Promise<CaseRow[]> {
 }
 
 export async function getCase(propertyId: string): Promise<CaseRow | null> {
-  const { data, error } = await supabase.from("cases_overview").select("*").eq("id", propertyId).maybeSingle();
+  const { data, error } = await supabase.from("admi_revisions_overview").select("*").eq("id", propertyId).maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const c = data as Row;
@@ -165,7 +165,7 @@ export const EQ_LABEL: Record<EqField, string> = {
 export type Equip = Record<string, { enabled: boolean; automatic: boolean; [k: string]: any }>;
 
 export async function getEquipment(propertyId: string, area: "exterior" | "interior"): Promise<{ eq: Equip; notes: string }> {
-  const { data, error } = await supabase.from("property_equipment").select("*").eq("property_id", propertyId).eq("area", area);
+  const { data, error } = await supabase.from("admi_property_equipment").select("*").eq("property_id", propertyId).eq("area", area);
   if (error) throw error;
   const eq: Equip = {};
   let notes = "";
@@ -189,7 +189,7 @@ export async function saveEquipment(propertyId: string, area: "exterior" | "inte
   });
   rows.push({ property_id: propertyId, area, item: "OBSERVACIONS", enabled: false, automatic: false, company: null, contact: null, meter_ref: null,
     industrial_id: null, phone: null, activated: null, deactivated: null, kind: null, brand: null, number: null, notes: notes || null });
-  const { error } = await supabase.from("property_equipment").upsert(rows, { onConflict: "property_id,area,item" });
+  const { error } = await supabase.from("admi_property_equipment").upsert(rows, { onConflict: "property_id,area,item" });
   if (error) throw error;
 }
 
@@ -233,7 +233,7 @@ export interface Revision {
 }
 
 export async function listRevisions(propertyId: string): Promise<Revision[]> {
-  const { data, error } = await supabase.from("revisions").select("*").eq("property_id", propertyId)
+  const { data, error } = await supabase.from("admi_property_revisions").select("*").eq("property_id", propertyId)
     .order("revision_date", { ascending: false }).order("revision_number", { ascending: false });
   if (error) throw error;
   return (data || []).map(toRevision);
@@ -277,17 +277,17 @@ export async function saveRevision(r: Revision): Promise<string> {
     items: r.items, other_observations: r.other_observations || null,
   };
   if (r.id) {
-    const { error } = await supabase.from("revisions").update(row).eq("id", r.id);
+    const { error } = await supabase.from("admi_property_revisions").update(row).eq("id", r.id);
     if (error) throw error;
     return r.id;
   }
-  const { data, error } = await supabase.from("revisions").insert(row).select("id").single();
+  const { data, error } = await supabase.from("admi_property_revisions").insert(row).select("id").single();
   if (error) throw error;
   return data.id;
 }
 
 export async function markRevisionMail(id: string, who: "responsible" | "owner") {
-  const { error } = await supabase.from("revisions").update(who === "responsible" ? { email_sent_responsible_at: new Date().toISOString() } : { email_sent_owner_at: new Date().toISOString() }).eq("id", id);
+  const { error } = await supabase.from("admi_property_revisions").update(who === "responsible" ? { email_sent_responsible_at: new Date().toISOString() } : { email_sent_owner_at: new Date().toISOString() }).eq("id", id);
   if (error) throw error;
 }
 
@@ -322,9 +322,9 @@ export function readingsText(r: Revision): string[] {
 
 export async function mailContext(propertyId: string, clientId: string | null, responsibleId: string, language: string) {
   const [resp, client, tpl] = await Promise.all([
-    responsibleId ? supabase.from("profiles").select("full_name, email").eq("id", responsibleId).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    clientId ? supabase.from("client_emails").select("email, is_primary, sort_order").eq("client_id", clientId).order("sort_order") : Promise.resolve({ data: [], error: null }),
-    supabase.from("email_templates").select("*").in("language", [language || "en", "en"]),
+    responsibleId ? supabase.from("admi_users").select("full_name, email").eq("id", responsibleId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    clientId ? supabase.from("admi_client_emails").select("email, is_primary, sort_order").eq("client_id", clientId).order("sort_order") : Promise.resolve({ data: [], error: null }),
+    supabase.from("admi_email_templates").select("*").in("language", [language || "en", "en"]),
   ]);
   const templates = ((tpl as any).data || []) as Row[];
   const pick = (kind: string) => templates.find(t => t.kind === kind && t.language === language) || templates.find(t => t.kind === kind && t.language === "en") || null;
@@ -343,7 +343,7 @@ export async function mailContext(propertyId: string, clientId: string | null, r
 export interface Photo { id: string; revision_id: string | null; storage_path: string; description: string; url?: string; created_at: string }
 
 export async function listPhotos(propertyId: string, revisionId: string | null): Promise<Photo[]> {
-  let q = supabase.from("property_photos").select("*").eq("property_id", propertyId).order("created_at");
+  let q = supabase.from("admi_property_photos").select("*").eq("property_id", propertyId).order("created_at");
   q = revisionId ? q.eq("revision_id", revisionId) : q.is("revision_id", null);
   const { data, error } = await q;
   if (error) throw error;
@@ -359,17 +359,17 @@ export async function uploadPhoto(propertyId: string, revisionId: string | null,
   const path = `${propertyId}/${revisionId || "inventari"}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
   const up = await supabase.storage.from("fotos").upload(path, file, { contentType: file.type || "image/jpeg" });
   if (up.error) throw up.error;
-  const { error } = await supabase.from("property_photos").insert({ property_id: propertyId, revision_id: revisionId, storage_path: path, description: description || original.name });
+  const { error } = await supabase.from("admi_property_photos").insert({ property_id: propertyId, revision_id: revisionId, storage_path: path, description: description || original.name });
   if (error) throw error;
 }
 
 export async function renamePhoto(id: string, description: string) {
-  const { error } = await supabase.from("property_photos").update({ description }).eq("id", id);
+  const { error } = await supabase.from("admi_property_photos").update({ description }).eq("id", id);
   if (error) throw error;
 }
 
 export async function deletePhoto(p: Photo) {
   await supabase.storage.from("fotos").remove([p.storage_path]);
-  const { error } = await supabase.from("property_photos").delete().eq("id", p.id);
+  const { error } = await supabase.from("admi_property_photos").delete().eq("id", p.id);
   if (error) throw error;
 }

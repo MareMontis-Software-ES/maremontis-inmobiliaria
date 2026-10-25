@@ -1,4 +1,4 @@
-// Historial de canvis (taula audit_log, omplerta per triggers): qui va canviar què i quan.
+// Historial de canvis (taula admi_change_history, omplerta per triggers): qui va canviar què i quan.
 // Els canvis d'un mateix «Gravar» (mateixa transacció) s'agrupen. En gravar un client, els
 // telèfons, e-mails, adreça i vehicles s'esborren i es tornen a crear: aquí es descarten les
 // parelles esborrat/creat iguals, de manera que només surt el que realment ha canviat.
@@ -106,20 +106,22 @@ function linesOf(rows: Row[], lk: Lookups): HistoryEntry["lines"] {
 }
 
 export async function listHistory(scope: HistoryScope, limit = 400): Promise<HistoryEntry[]> {
-  let q = supabase.from("audit_log").select("*").order("changed_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
-  q = "clientId" in scope ? q.eq("client_id", scope.clientId) : q.eq("property_id", scope.propertyId).in("table_name", scope.tables);
+  let q = supabase.from("admi_change_history").select("*").order("changed_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
+  q = "clientId" in scope ? q.eq("client_id", scope.clientId) : q.eq("property_id", scope.propertyId).in("table_name", scope.tables.map(t => "admi_" + t));
   const { data, error } = await q;
   if (error) throw error;
+  // les taules porten el prefix admi_: aquí es treballa amb el nom curt
+  for (const r of (data || []) as Row[]) r.table_name = String(r.table_name).replace(/^admi_/, "");
   const rows = (data || []) as Row[];
 
   const ids = (k: string) => [...new Set(rows.flatMap(r => [r.old_data?.[k], r.new_data?.[k]]).filter(Boolean))] as string[];
   const clientIds = ids("client_id"), relIds = ids("related_person_id");
   const [people, contracts, clients, related, taxes] = await Promise.all([
-    supabase.from("profiles").select("id, full_name"),
-    supabase.from("contract_types").select("id, description"),
-    clientIds.length ? supabase.from("clients").select("id, first_name, last_name").in("id", clientIds) : Promise.resolve({ data: [] as Row[] }),
-    relIds.length ? supabase.from("client_related_persons").select("id, first_name, last_name").in("id", relIds) : Promise.resolve({ data: [] as Row[] }),
-    "propertyId" in scope ? supabase.from("property_taxes").select("id, tax_year").eq("property_id", scope.propertyId) : Promise.resolve({ data: [] as Row[] }),
+    supabase.from("admi_users").select("id, full_name"),
+    supabase.from("admi_contract_types").select("id, description"),
+    clientIds.length ? supabase.from("admi_clients").select("id, first_name, last_name").in("id", clientIds) : Promise.resolve({ data: [] as Row[] }),
+    relIds.length ? supabase.from("admi_client_related_persons").select("id, first_name, last_name").in("id", relIds) : Promise.resolve({ data: [] as Row[] }),
+    "propertyId" in scope ? supabase.from("admi_property_taxes").select("id, tax_year").eq("property_id", scope.propertyId) : Promise.resolve({ data: [] as Row[] }),
   ]);
   const lk: Lookups = {
     people: new Map(((people as any).data || []).map((p: Row) => [p.id, s(p.full_name)])),

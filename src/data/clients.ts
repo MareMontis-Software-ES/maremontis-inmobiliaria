@@ -35,10 +35,10 @@ export function emptyClient(): ClientFull {
 }
 
 const LIST_SELECT = `id, client_code, account_code, title, first_name, last_name, dni, nie, resident, status,
-  client_phones(country_prefix, phone_number, is_primary),
-  client_emails(email, is_primary),
-  client_addresses(municipality, country, is_primary),
-  property_owners(ownership_percentage, properties(id, admin_number, street_type, address, municipality, status, ${CONTRACT_SELECT}))`;
+  client_phones:admi_client_phones(country_prefix, phone_number, is_primary),
+  client_emails:admi_client_emails(email, is_primary),
+  client_addresses:admi_client_addresses(municipality, country, is_primary),
+  property_owners:admi_property_owners(ownership_percentage, properties:admi_properties(id, admin_number, street_type, address, municipality, status, ${CONTRACT_SELECT}))`;
 
 type Row = Record<string, any>;
 
@@ -63,7 +63,7 @@ function propertyLinks(rows: Row[] | null | undefined): PropertyLink[] {
 }
 
 export async function listClients(): Promise<ClientSummary[]> {
-  const { data, error } = await supabase.from("clients").select(LIST_SELECT).order("client_code");
+  const { data, error } = await supabase.from("admi_clients").select(LIST_SELECT).order("client_code");
   if (error) throw error;
   return (data || []).map((c: Row) => {
     const ph = primary(c.client_phones), em = primary(c.client_emails), ad = primary(c.client_addresses);
@@ -79,9 +79,9 @@ export async function listClients(): Promise<ClientSummary[]> {
 }
 
 export async function getClient(id: string): Promise<{ full: ClientFull; properties: PropertyLink[]; accountCode: string }> {
-  const { data: c, error } = await supabase.from("clients")
-    .select(`*, client_addresses(*), client_phones(*), client_emails(*), client_related_persons!client_related_persons_client_id_fkey(*), client_vehicles(*),
-             property_owners(ownership_percentage, properties(id, admin_number, street_type, address, municipality, status, ${CONTRACT_SELECT}))`)
+  const { data: c, error } = await supabase.from("admi_clients")
+    .select(`*, client_addresses:admi_client_addresses(*), client_phones:admi_client_phones(*), client_emails:admi_client_emails(*), client_related_persons:admi_client_related_persons!client_related_persons_client_id_fkey(*), client_vehicles:admi_client_vehicles(*),
+             property_owners:admi_property_owners(ownership_percentage, properties:admi_properties(id, admin_number, street_type, address, municipality, status, ${CONTRACT_SELECT}))`)
     .eq("id", id).single();
   if (error) throw error;
   const ad = primary(c.client_addresses);
@@ -132,7 +132,7 @@ export async function saveClient(full: ClientFull): Promise<string> {
 }
 
 export async function isClientCodeTaken(code: number, exceptId?: string): Promise<boolean> {
-  let q = supabase.from("clients").select("id").eq("client_code", code);
+  let q = supabase.from("admi_clients").select("id").eq("client_code", code);
   if (exceptId) q = q.neq("id", exceptId);
   const { data, error } = await q;
   if (error) throw error;
@@ -140,7 +140,7 @@ export async function isClientCodeTaken(code: number, exceptId?: string): Promis
 }
 
 export async function isAccountCodeTaken(code: string, exceptId?: string): Promise<boolean> {
-  let q = supabase.from("clients").select("id").eq("account_code", code);
+  let q = supabase.from("admi_clients").select("id").eq("account_code", code);
   if (exceptId) q = q.neq("id", exceptId);
   const { data, error } = await q;
   if (error) throw error;
@@ -149,7 +149,7 @@ export async function isAccountCodeTaken(code: string, exceptId?: string): Promi
 
 /** Baixa lògica: el client no s'esborra mai (cal per al model 210 de l'any següent). */
 export async function setClientStatus(id: string, status: "active" | "inactive") {
-  const { error } = await supabase.from("clients")
+  const { error } = await supabase.from("admi_clients")
     .update({ status, deactivated_at: status === "inactive" ? new Date().toISOString().slice(0, 10) : null })
     .eq("id", id);
   if (error) throw error;
@@ -164,7 +164,7 @@ export interface TaxRow {
 /** Impostos de totes les finques del client (darrer any de cada una primer). */
 export async function clientTaxes(properties: PropertyLink[]): Promise<TaxRow[]> {
   if (!properties.length) return [];
-  const { data, error } = await supabase.from("property_taxes")
+  const { data, error } = await supabase.from("admi_property_taxes")
     .select("property_id, tax_year, cadastral_value, cadastral_ref, ibi_quota, taxable_base, rent_quota, paid, paid_date")
     .in("property_id", properties.map(p => p.id))
     .order("tax_year", { ascending: false });
