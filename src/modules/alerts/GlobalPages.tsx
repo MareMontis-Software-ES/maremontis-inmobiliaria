@@ -3,13 +3,14 @@
 //    passar al calendari o per correu, i històric de completades de 6 mesos.
 //  · Claus (PDF pàg. 7 + PDF 2): totes les claus que són fora, retorns i alerta de fora de termini.
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CalendarPlus, Check, Download, KeyRound, Mail, Plus, RotateCcw, X } from "lucide-react";
+import { Bell, CalendarPlus, Check, KeyRound, Mail, Plus, RotateCcw, X } from "lucide-react";
 import { Empty, Notice, Panel, TextArea, TextInput } from "../../components/ui";
 import { SearchSelect } from "../../components/SearchSelect";
+import { ExportButtons } from "../../components/ExportButtons";
 import { errorText } from "../../lib/supabase";
 import { addDaysISO, fmtDate, todayISO } from "../../lib/format";
 import { completeAlert, createAlert, updateAlert } from "../../data/alerts";
-import { alertsToIcs, downloadText, listAllAlerts, listAllKeys, propertyPickList, toCsv, type AlertRow, type KeyRow, type PropertyPick } from "../../data/global";
+import { alertsToIcs, downloadText, listAllAlerts, listAllKeys, propertyPickList, type AlertRow, type KeyRow, type PropertyPick } from "../../data/global";
 import { clientPickList, createKeyMove, listIndustrials, returnKey } from "../../data/finques";
 
 const TYPE_LABEL: Record<string, string> = { manual: "Manual", caducitat_document: "Document", naixement: "Aniversari", claus: "Claus", venciment: "Venciment" };
@@ -42,6 +43,10 @@ export function AlertsPage({ canWrite, userId, onOpenClient }: { canWrite: boole
       <div className="page-title"><div><small>SEGUIMENT</small><h1>Alertes</h1><p>Totes les alertes per data. Les completades passen a l'històric durant 6 mesos.</p></div>
         <div className="head-actions">
           <button className="cancel-btn" disabled={!list.length} onClick={() => downloadText("alertes.ics", alertsToIcs(list), "text/calendar")}><CalendarPlus size={16} /> Passar al calendari (.ics)</button>
+          <ExportButtons disabled={!list.length} table={() => ({ fileName: "alertes", title: "Alertes",
+            subtitle: [{ pendents: "Pendents", vencudes: "Vençudes", setmana: "Pròxims 7 dies", completades: "Completades", totes: "Totes" }[filter], type ? TYPE_LABEL[type] || type : "", q ? `Cerca «${q}»` : ""].filter(Boolean).join(" · "),
+            head: ["Data", "Tipus", "Títol", "Client", "Finca", "Observacions", "Completada"],
+            rows: list.map(a => [fmtDate(a.due_date), TYPE_LABEL[a.alert_type] || a.alert_type, a.title, a.client_name, a.finca, a.content, fmtDate(a.completed_at)]) })} />
           {canWrite && <button className="save-btn" onClick={() => setAdding(a => !a)}><Plus size={18} /> Nova alerta</button>}
         </div>
       </div>
@@ -128,7 +133,9 @@ export function KeysPage({ canWrite, userId, onOpenClient }: { canWrite: boolean
     <div className="work-area list-view">
       <div className="page-title"><div><small>CONTROL</small><h1>Claus</h1><p>Entregues i retorns de les claus de totes les finques. Retorn previst: una setmana després (editable).</p></div>
         <div className="head-actions">
-          <button className="cancel-btn" disabled={!list.length} onClick={() => downloadText("claus.csv", toCsv(["Núm. adm.", "Finca", "Client", "Entrega", "Entregat a", "Per", "Motiu", "Retorn previst", "Retornada"], list.map(k => [k.admin_number, k.finca, k.client_name, fmtDate(k.delivered_at), k.delivered_to, k.delivered_by, k.reason, fmtDate(k.expected_return), fmtDate(k.returned_at)])), "text/csv")}><Download size={16} /> Excel (CSV)</button>
+          <ExportButtons disabled={!list.length} table={() => ({ fileName: "claus", title: "Claus", subtitle: [filter === "totes" ? "Totes les entregues" : filter === "fora" ? "Claus que són fora" : "Fora de termini", q ? `Cerca «${q}»` : ""].filter(Boolean).join(" · "),
+            head: ["Núm. adm.", "Finca", "Client", "Entrega", "Entregat a", "Per", "Motiu", "Retorn previst", "Retornada"],
+            rows: list.map(k => [k.admin_number, k.finca, k.client_name, fmtDate(k.delivered_at), k.delivered_to, k.delivered_by, k.reason, fmtDate(k.expected_return), fmtDate(k.returned_at)]) })} />
           {canWrite && <button className="save-btn" onClick={() => { setF(blank()); setAdding(a => !a); }}><Plus size={18} /> Nova entrega</button>}
         </div>
       </div>

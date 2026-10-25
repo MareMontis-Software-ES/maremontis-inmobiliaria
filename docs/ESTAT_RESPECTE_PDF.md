@@ -54,8 +54,8 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Fitxer AEAT i NRC | Generar fitxer per a l'AEAT i comprovar el retorn del banc | — | ⏳ (cal l'especificació dels fitxers) |
 | Importació IBI | Incorporar fitxers d'IBI | Importació de CSV per referència cadastral | 🟡 (cal un exemple del fitxer real) |
 | Comptabilitat | ODBC a la taula d'immobles amb els mateixos noms de camp; «Impostos pagament = S» + data; factures d'inici d'any només clients no de baixa | — | ⏳ |
-| Llistats | — | Exportació Excel a Claus, Revisions i Impostos | 🟡 |
-| Estadístiques | Estadístiques i informes calculats sobre les dades (sense detallar) | Menú Estadístiques (només consulta): cartera de clients i finques (residents, població, zona, contracte, lloguer, idioma, país, baixes per any) i activitat per any (revisions i incidències per mes, notes de servei, alertes, claus, impostos) | 🟡 (informes concrets a validar) |
+| Llistats | Llistats en Excel i en PDF | Botons «Excel» i «PDF» a Clients, Immobles, Històric de baixes, Alertes, Claus, Revisions, Impostos i Llistat M-210 (el que es veu amb els filtres aplicats). A més, llistats a mida des d'Estadístiques | ✅ |
+| Estadístiques | De totes les dades dels clients i dels immobles, triant de quines dades es fa | Menú «Estadístiques i llistats» (només consulta): es tria clients o immobles, quins (actius/baixes/tots + filtres per qualsevol camp), per quin camp s'agrupa (i un segon camp per a taula creuada) i què es compta (nombre, suma o mitjana: preu del contracte, impostos de l'any triat, jardí, piscina…). Mode «Llistat» amb les columnes triades. Excel i PDF (amb gràfic de barres). Les configuracions es poden desar a l'ordinador | 🟡 (a provar amb les dades reals) |
 | Còpia de seguretat | — | Configuració → Còpia de seguretat: un Excel amb un full per taula i un full «Resum» (només administradors, només lectura; les fotos no s'hi inclouen) | ✅ |
 | SMS | Botó a la pantalla antiga | — | ⏳ (no s'esmenta a les anotacions) |
 | Reindexar | Manteniment de la base de dades antiga | No cal (Supabase/PostgreSQL) | ❌ |

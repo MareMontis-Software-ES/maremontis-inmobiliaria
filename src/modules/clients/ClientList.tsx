@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, House, Plus, Search, X } from "lucide-react";
 import type { ClientSummary } from "../../types";
+import { ExportButtons } from "../../components/ExportButtons";
 
 interface Props {
   clients: ClientSummary[];
@@ -68,7 +69,15 @@ export function ClientList({ clients, query, setQuery, canWrite, loading, active
     <div className="work-area list-view">
       <div className="page-title">
         <div><small>GESTIÓ DE CLIENTS</small><h1>Clients</h1><p>Relació de clients i propietaris.</p></div>
-        {canWrite && <button className="save-btn" onClick={onNew}><Plus size={18} /> Alta client</button>}
+        <div className="head-actions">
+          <ExportButtons disabled={!rows.length} table={() => ({ fileName: "clients", title: "Relació de clients",
+            subtitle: [status === "active" ? "Actius" : status === "inactive" ? "De baixa" : "Tots", resident === "true" ? "Residents" : resident === "false" ? "No residents" : "",
+              country, town, property && `Immoble «${property}»`, query && `Cerca «${query}»`].filter(Boolean).join(" · "),
+            head: ["Codi", "Nom", "Cognoms", "DNI/NIE", "Immobles", "Població", "País", "Telèfon", "E-mail", "Estat"],
+            rows: rows.map(c => [c.client_code, c.first_name, c.last_name, c.dni || c.nie, c.properties.map(h => h.address + (h.status === "baixa" ? " (baixa)" : "")).join(", "),
+              c.municipality, c.country, c.phone, c.email, c.status === "inactive" ? "Baixa" : "Actiu"]) })} />
+          {canWrite && <button className="save-btn" onClick={onNew}><Plus size={18} /> Alta client</button>}
+        </div>
       </div>
       <section className="client-search-page">
         <div className="client-search-tools">
