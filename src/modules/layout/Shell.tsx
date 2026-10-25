@@ -3,6 +3,7 @@ import { AlertTriangle, BarChart3, Bell, Building2, CalendarDays, ChevronRight, 
 import type { Profile, Section } from "../../types";
 import type { SearchHit } from "../../data/search";
 import { GlobalSearch } from "./GlobalSearch";
+import logo from "../../assets/logo-maremontis.png";
 
 // Menú lateral. Els mòduls marcats amb «pending» encara no estan desenvolupats.
 const NAV: [Section, any, boolean][] = [
@@ -24,6 +25,7 @@ const ROLE_LABEL = { admin: "Administrador", oficina: "Oficina", consulta: "Nom�
 interface Props {
   section: Section;
   crumb: string;
+  visible: (s: Section) => boolean;   // apartats que el rol de l'usuari pot veure
   profile: Profile | null;
   email: string;
   query: string;
@@ -35,20 +37,20 @@ interface Props {
   children: ReactNode;
 }
 
-export function Shell({ section, crumb, profile, email, overdue, onNavigate, onSearch, onPick, onLogout, children }: Props) {
+export function Shell({ section, crumb, visible, profile, email, overdue, onNavigate, onSearch, onPick, onLogout, children }: Props) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-symbol"><House size={31} /><span></span></div><div><strong>MareMontis</strong><small>Gestió Immobiliària</small></div></div>
+        <div className="brand"><img className="brand-logo" src={logo} alt="MareMontis" /><small>Gestió Immobiliària</small></div>
         <nav className="side-nav">
-          {NAV.map(([label, Icon, pending]) => (
+          {NAV.filter(([label]) => visible(label)).map(([label, Icon, pending]) => (
             <button key={label} className={"nav-item " + (section === label ? "active" : "") + (pending ? " pending" : "")} onClick={() => onNavigate(label)} title={pending ? "Pendent de desenvolupar" : undefined}>
               <Icon size={22} /><span>{label}</span>
             </button>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <button className={"nav-item " + (section === "Configuració" ? "active" : "")} onClick={() => onNavigate("Configuració")}><Settings size={22} /><span>Configuració</span></button>
+          {visible("Configuració") && <button className={"nav-item " + (section === "Configuració" ? "active" : "")} onClick={() => onNavigate("Configuració")}><Settings size={22} /><span>Configuració</span></button>}
           <div className="user-profile">
             <div className="user-icon"><Users size={19} /></div>
             <div><strong>{profile?.full_name || email}</strong><small>{profile ? ROLE_LABEL[profile.role] : "Sense perfil"}</small></div>

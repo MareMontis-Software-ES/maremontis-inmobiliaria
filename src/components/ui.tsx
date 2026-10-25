@@ -14,12 +14,12 @@ export function Panel({ title, icon: Icon, children, action }: { title: string; 
 
 type Opt = string | [string, string];
 
-export function TextInput({ label, value, onChange, type = "text", placeholder, error, readOnly, list, wide, required }: {
+export function TextInput({ label, value, onChange, type = "text", placeholder, error, readOnly, list, wide, wide2, required }: {
   label: string; value: string; onChange?: (v: string) => void; type?: string; placeholder?: string;
-  error?: string | null; readOnly?: boolean; list?: string; wide?: boolean; required?: boolean;
+  error?: string | null; readOnly?: boolean; list?: string; wide?: boolean; wide2?: boolean; required?: boolean;
 }) {
   return (
-    <label className={"f" + (wide ? " f-wide" : "") + (error ? " f-error" : "")}>
+    <label className={"f" + (wide ? " f-wide" : wide2 ? " f-wide2" : "") + (error ? " f-error" : "")}>
       <span>{label}{required && <b className="req">*</b>}</span>
       <input type={type} value={value} placeholder={placeholder} readOnly={readOnly} list={list}
         onChange={e => onChange?.(e.target.value)} />

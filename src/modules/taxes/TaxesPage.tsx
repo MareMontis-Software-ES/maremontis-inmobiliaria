@@ -8,6 +8,7 @@ import { errorText } from "../../lib/supabase";
 import { fmtDate, todayISO } from "../../lib/format";
 import { importIbi, listTaxYear, model210, setPaid, type TaxLine } from "../../data/taxes";
 import { downloadText, toCsv } from "../../data/global";
+import { getWorkingYear } from "../../data/settings";
 
 const eur = (n: number) => n.toLocaleString("ca-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -21,6 +22,7 @@ export function TaxesPage({ canWrite, onOpenProperty }: { canWrite: boolean; onO
   const [error, setError] = useState(""); const [ok, setOk] = useState("");
   const file = useRef<HTMLInputElement>(null);
 
+  useEffect(() => { getWorkingYear().then(setYear).catch(() => {}); }, []); // per defecte, l'any de treball de Configuració
   const load = () => { setRows(null); return listTaxYear(year).then(setRows).catch(e => setError(errorText(e))); };
   useEffect(() => { void load(); }, [year]);
 

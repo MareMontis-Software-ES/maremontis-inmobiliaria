@@ -425,3 +425,41 @@
 .history-list ul{margin:0;padding-left:16px;font-size:12.5px;display:grid;gap:2px}
 .history-list .h-add{color:#21573b}
 .history-list .h-del{color:#b0391f}
+
+/* --- Fitxa del client: capçalera i pestanyes fixes (només es mou el contingut) --- */
+.ficha-head{position:sticky;top:var(--open-tabs-h,40px);z-index:15;background:var(--cream);padding-top:6px;margin:0 -14px;padding-left:14px;padding-right:14px;box-shadow:0 6px 8px -8px #1a352740}
+.ficha-head .banner-fincas-list{max-height:104px}
+.ficha-head .record-tabs{background:var(--cream)}
+.record-number .account-code{font-size:12px;font-weight:400;opacity:.85;margin-left:-4px}
+/* Finques de baixa en vermell */
+.finca-chip.off{opacity:1;font-style:normal;background:#b3261e;border-color:#ffb4ab;color:#fff}
+.finca-chip.off .finca-num{background:#7d1a14}
+.finca-chip.off.on{background:#fde3e0;color:#8c1d18;border-color:#fde3e0;box-shadow:0 0 0 2px #d93025}
+.finca-context-off{background:#fdecea;border-color:#f3b8b2;color:#8c1d18}
+.txt-off{color:#b3261e}
+.client-home-chip.chip-off{border-color:#e7a29b;background:#fdecea;color:#8c1d18}
+.client-home-chip.chip-off .mini-tag{background:#b3261e;color:#fff}
+/* Llista: fila triada amb les fletxes del teclat */
+.client-list-row.row-kbd td{background:#efe6cf}
+.client-list-row.row-kbd td:first-child{box-shadow:inset 3px 0 0 #175346}
+/* Formularis més horitzontals */
+.form-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.f-wide2{grid-column:span 2}
+.client-edit{display:flex;flex-direction:column;gap:12px;min-width:0}
+.client-edit-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.client-data{display:flex;flex-direction:column;gap:12px}
+.info-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 22px}
+.path-line{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* Impostos: dues columnes de dos i observacions a baix */
+.taxes-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;margin-top:12px}
+.taxes-obs{margin-top:12px}
+.year-now{display:flex;align-items:center;gap:6px;font-size:13px;margin-right:6px}
+.year-big{font-size:15px;margin:4px 0 8px}
+.bottom-bar>div{flex-wrap:wrap}
+.danger-btn{color:#b3261e;border-color:#e7a29b;margin-left:auto}
+.danger-btn:hover{background:#fdecea}
+.role-switch{display:flex;gap:6px;margin-bottom:10px}
+.perm-table td:not(:first-child),.perm-table th:not(:first-child){text-align:center;width:90px}
+.cell-actions{display:inline-flex;gap:6px;align-items:center}
+@media(max-width:1100px){.form-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.client-edit-row,.taxes-columns{grid-template-columns:1fr}}
+@media(max-width:700px){.form-grid.four{grid-template-columns:1fr}.f-wide2{grid-column:1/-1}.ficha-head{position:static}}

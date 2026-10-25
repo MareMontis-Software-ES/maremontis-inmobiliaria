@@ -21,6 +21,7 @@ export interface ClientAddress {
 
 export interface RelatedPerson {
   id?: string;
+  property_id: string;         // finca a la qual pertany ("" = sense finca assignada, dades antigues)
   relation: "conjuge" | "copropietari";
   title: string; first_name: string; last_name: string;
   birth_date: string; birth_city: string; birth_country_code: string;
@@ -34,6 +35,7 @@ export interface RelatedPerson {
 export interface ClientRecord {
   id?: string;
   client_code: string;
+  account_code: string;        // subcompte comptable, s'escriu a mà
   title: string; sex: string; initials: string;
   first_name: string; last_name: string; short_name: string;
   client_type: string;

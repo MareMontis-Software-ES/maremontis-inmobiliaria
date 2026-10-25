@@ -13,13 +13,15 @@ export type FieldType = "text" | "num" | "money" | "date" | "select" | "password
 export interface FieldDef { k: string; label: string; type?: FieldType; options?: [string, string][]; wide?: boolean; required?: boolean }
 export interface FieldGroup { id: string; title: string; fields: FieldDef[] }
 
-export const RENTAL_USES: [string, string][] = [["turistic", "Lloguer turístic"], ["urba", "Lloguer urbà"]];
+export const RENTAL_USES: [string, string][] = [["turistic", "Lloguer vacacional"], ["urba", "Lloguer urbà"]];
+/** Camps que es gestionen a la pestanya Claus (el núm. d'administració només serveix per a l'armari de claus) */
+export const KEY_FIELDS = ["admin_number", "key_office"];
 
 export function propertyGroups(zones: [string, string][], contractTypes: [string, string][], streetTypes: string[]): FieldGroup[] {
   const st = streetTypes.map(x => [x, x] as [string, string]);
   return [
     { id: "ident", title: "Dades de la finca", fields: [
-      { k: "admin_number", label: "Núm. administració (armari)", type: "num", required: true },
+      { k: "admin_number", label: "Núm. administració (armari de claus)", type: "num", required: true },
       { k: "rental_use", label: "Lloguer", type: "select", options: RENTAL_USES },
       { k: "street_type", label: "Tipus de via", type: "select", options: st },
       { k: "zone", label: "Zona", type: "select", options: zones },
@@ -324,5 +326,18 @@ export async function createKeyMove(propertyId: string, userId: string | undefin
 
 export async function returnKey(id: string, date: string | null) {
   const { error } = await supabase.from("key_movements").update({ returned_at: date }).eq("id", id);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Clau de la finca: núm. d'administració (= armari) i oficina on es guarda
+// ---------------------------------------------------------------------------
+export async function getPropertyKey(id: string): Promise<{ admin_number: string; key_office: string; status: string }> {
+  const { data, error } = await supabase.from("properties").select("admin_number, key_office, status").eq("id", id).single();
+  if (error) throw error;
+  return { admin_number: s(data.admin_number), key_office: s(data.key_office), status: s(data.status) };
+}
+export async function savePropertyKey(id: string, adminNumber: number, keyOffice: string) {
+  const { error } = await supabase.from("properties").update({ admin_number: adminNumber, key_office: keyOffice || null }).eq("id", id);
   if (error) throw error;
 }
