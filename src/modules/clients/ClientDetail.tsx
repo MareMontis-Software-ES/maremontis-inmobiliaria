@@ -239,12 +239,12 @@ function ClientData({ full, addressLine }: { full: ClientFull; addressLine: stri
       <div className="client-edit-row">
         <Panel title="Telèfons" icon={Phone}>
           {full.phones.filter(x => x.phone_number).length
-            ? full.phones.filter(x => x.phone_number).map((x, i) => <Info2 key={i} label={label(PHONE_TYPES, x.phone_type)} value={<>{x.country_prefix} {x.phone_number}{x.notes && <small className="muted"> · {x.notes}</small>}</>} />)
+            ? <div className="info-cols">{full.phones.filter(x => x.phone_number).map((x, i) => <Info2 key={i} label={label(PHONE_TYPES, x.phone_type)} value={<>{x.country_prefix} {x.phone_number}{x.notes && <small className="muted"> · {x.notes}</small>}</>} />)}</div>
             : <Empty>Sense telèfons.</Empty>}
         </Panel>
         <Panel title="E-mails" icon={Mail}>
           {full.emails.filter(x => x.email).length
-            ? full.emails.filter(x => x.email).map((x, i) => <Info2 key={i} label={label(EMAIL_TYPES, x.email_type)} value={<a href={"mailto:" + x.email}>{x.email}</a>} />)
+            ? <div className="info-cols">{full.emails.filter(x => x.email).map((x, i) => <Info2 key={i} label={label(EMAIL_TYPES, x.email_type)} value={<a href={"mailto:" + x.email}>{x.email}</a>} />)}</div>
             : <Empty>Sense e-mails.</Empty>}
         </Panel>
       </div>
