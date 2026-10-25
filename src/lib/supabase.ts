@@ -13,7 +13,13 @@ const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
 /** Es manté per compatibilitat; ara sempre hi ha configuració per defecte. */
 export const supabaseMissingConfig = !url || !key;
 
-export const supabase = createClient(url, key);
+// La sessió només dura mentre la finestra és oberta (sessionStorage): cada vegada que
+// s'obre el programa es demana usuari i contrasenya, perquè cada usuari té els seus permisos.
+// S'esborra la sessió que versions anteriors deixaven guardada a localStorage.
+try { for (const k of Object.keys(localStorage)) if (k.startsWith("sb-") && k.endsWith("-auth-token")) localStorage.removeItem(k); } catch { /* sense emmagatzematge */ }
+const sessionStore = (() => { try { return window.sessionStorage; } catch { return undefined; } })();
+
+export const supabase = createClient(url, key, { auth: { storage: sessionStore, persistSession: true } });
 
 /** Converteix qualsevol error de Supabase en un text llegible */
 export function errorText(e: unknown): string {

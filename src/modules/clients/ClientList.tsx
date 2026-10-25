@@ -1,7 +1,8 @@
 // Llista i cercador de clients (PDF pàg. 1: «Relació de clients / immobles»)
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, House, Plus, Search, X } from "lucide-react";
 import type { ClientSummary } from "../../types";
+import { ExportButtons } from "../../components/ExportButtons";
 
 interface Props {
   clients: ClientSummary[];
@@ -9,6 +10,7 @@ interface Props {
   setQuery: (q: string) => void;
   canWrite: boolean;
   loading: boolean;
+  active: boolean;             // la llista és la pestanya visible (per a les fletxes del teclat)
   onOpen: (id: string) => void;
   onOpenProperty: (propertyId: string, clientId: string) => void;
   onNew: () => void;
@@ -16,7 +18,7 @@ interface Props {
 
 const norm = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-export function ClientList({ clients, query, setQuery, canWrite, loading, onOpen, onOpenProperty, onNew }: Props) {
+export function ClientList({ clients, query, setQuery, canWrite, loading, active, onOpen, onOpenProperty, onNew }: Props) {
   const [status, setStatus] = useState("active");
   const [resident, setResident] = useState("");
   const [country, setCountry] = useState("");
@@ -39,13 +41,43 @@ export function ClientList({ clients, query, setQuery, canWrite, loading, onOpen
       (!q || norm([c.client_code, c.account_code, c.first_name, c.last_name, c.dni, c.nie, c.phone, c.email, c.municipality].join(" ")).includes(q)));
   }, [clients, query, status, resident, country, town, property]);
 
+  // Fletxes amunt/avall per moure's de client a client; Retorn obre la fitxa
+  const [sel, setSel] = useState(0);
+  const body = useRef<HTMLTableSectionElement>(null);
+  useEffect(() => { setSel(0); }, [rows]);
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.tagName === "TEXTAREA" || t.tagName === "SELECT" || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setSel(i => Math.max(0, Math.min(rows.length - 1, i + (e.key === "ArrowDown" ? 1 : -1))));
+      } else if (e.key === "Enter" && rows[sel] && (t.tagName !== "INPUT" || t.closest(".client-search-input"))) {
+        e.preventDefault();
+        onOpen(rows[sel].id);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active, rows, sel]);
+  useEffect(() => { body.current?.children[sel]?.scrollIntoView({ block: "nearest" }); }, [sel]);
+
   const clear = () => { setQuery(""); setStatus("active"); setResident(""); setCountry(""); setTown(""); setProperty(""); };
 
   return (
     <div className="work-area list-view">
       <div className="page-title">
         <div><small>GESTIÓ DE CLIENTS</small><h1>Clients</h1><p>Relació de clients i propietaris.</p></div>
-        {canWrite && <button className="save-btn" onClick={onNew}><Plus size={18} /> Alta client</button>}
+        <div className="head-actions">
+          <ExportButtons disabled={!rows.length} table={() => ({ fileName: "clients", title: "Relació de clients",
+            subtitle: [status === "active" ? "Actius" : status === "inactive" ? "De baixa" : "Tots", resident === "true" ? "Residents" : resident === "false" ? "No residents" : "",
+              country, town, property && `Immoble «${property}»`, query && `Cerca «${query}»`].filter(Boolean).join(" · "),
+            head: ["Codi", "Nom", "Cognoms", "DNI/NIE", "Immobles", "Població", "País", "Telèfon", "E-mail", "Estat"],
+            rows: rows.map(c => [c.client_code, c.first_name, c.last_name, c.dni || c.nie, c.properties.map(h => h.address + (h.status === "baixa" ? " (baixa)" : "")).join(", "),
+              c.municipality, c.country, c.phone, c.email, c.status === "inactive" ? "Baixa" : "Actiu"]) })} />
+          {canWrite && <button className="save-btn" onClick={onNew}><Plus size={18} /> Alta client</button>}
+        </div>
       </div>
       <section className="client-search-page">
         <div className="client-search-tools">
@@ -64,17 +96,16 @@ export function ClientList({ clients, query, setQuery, canWrite, loading, onOpen
         <section className="data-panel client-results">
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Codi</th><th>Nom</th><th>Cognoms</th><th>Immobles</th><th>Població</th><th>Telèfon</th><th></th></tr></thead>
-              <tbody>
-                {rows.map(c => (
-                  <tr key={c.id} className={"client-list-row" + (c.status === "inactive" ? " row-off" : "")} onClick={() => onOpen(c.id)}>
-                    <td>{c.account_code}</td>
+              <thead><tr><th>Nom</th><th>Cognoms</th><th>Immobles</th><th>Població</th><th>Telèfon</th><th></th></tr></thead>
+              <tbody ref={body}>
+                {rows.map((c, i) => (
+                  <tr key={c.id} className={"client-list-row" + (c.status === "inactive" ? " row-off" : "") + (i === sel ? " row-kbd" : "")} onClick={() => onOpen(c.id)} onMouseEnter={() => setSel(i)}>
                     <td>{c.first_name}</td>
                     <td>{c.last_name}</td>
                     <td>
                       <div className="client-home-list">
                         {c.properties.length ? c.properties.map(h => (
-                          <button type="button" className="client-home-chip" key={h.id} onClick={e => { e.stopPropagation(); onOpenProperty(h.id, c.id); }}>
+                          <button type="button" className={"client-home-chip" + (h.status === "baixa" ? " chip-off" : "")} key={h.id} onClick={e => { e.stopPropagation(); onOpenProperty(h.id, c.id); }}>
                             <House size={17} /><span>{h.address}</span>{h.status === "baixa" && <span className="mini-tag">BAIXA</span>}
                           </button>
                         )) : <span className="client-no-homes">Sense immobles</span>}
@@ -86,14 +117,14 @@ export function ClientList({ clients, query, setQuery, canWrite, loading, onOpen
                   </tr>
                 ))}
                 {!rows.length && (
-                  <tr className="no-hover"><td colSpan={7} className="table-empty">
+                  <tr className="no-hover"><td colSpan={6} className="table-empty">
                     {loading ? "Carregant clients…" : clients.length ? "Cap client coincideix amb la cerca." : "Encara no hi ha cap client. Fes «Alta client» per crear el primer."}
                   </td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="client-results-footer">Mostrant {rows.length} de {clients.length} clients</div>
+          <div className="client-results-footer">Mostrant {rows.length} de {clients.length} clients · Fletxes ↑ ↓ per moure's i Retorn per obrir la fitxa</div>
         </section>
       </section>
     </div>

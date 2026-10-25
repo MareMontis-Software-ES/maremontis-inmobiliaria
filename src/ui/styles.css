@@ -232,3 +232,9 @@
 @media(max-width:850px){.dashboard-layout{grid-template-columns:1fr}}
 @media(max-width:560px){.dash-table-head,.alert-row{grid-template-columns:28px minmax(65px,1fr) 62px 72px 10px}.today-row,.dash-table-head.tasks-head{grid-template-columns:44px minmax(65px,1fr) 0 72px 10px}.type-chip{display:none}}
 .dashboard-right>section>header strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.dashboard-right>section>header button{white-space:nowrap;flex:none}
+
+/* Logo de MareMontis a dalt del menú */
+.brand-logo{width:100%;max-width:178px;height:auto;display:block}
+@media(max-width:850px){.brand-logo{max-width:58px}.brand>small{display:none}}
+/* El menú lateral es queda quiet mentre es desplaça el contingut */
+.sidebar{position:sticky;top:0;height:100vh;min-height:0;overflow-y:auto;align-self:flex-start}

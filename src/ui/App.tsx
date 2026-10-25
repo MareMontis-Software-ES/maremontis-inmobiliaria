@@ -20,6 +20,7 @@ import { StatsPage } from "../modules/stats/StatsPage";
 import { IncidentsView } from "../modules/incidents/IncidentsView";
 import { mainClientOf } from "../data/finques";
 import { Notice } from "../components/ui";
+import { permissionsFor, type Perms } from "../data/settings";
 import type { Profile, Section } from "../types";
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
   const [clientView, setClientView] = useState<ClientView>({ mode: "list" });
   const [query, setQuery] = useState("");
   const [overdue, setOverdue] = useState(0);
+  const [perms, setPerms] = useState<Perms | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
@@ -42,9 +44,12 @@ export default function App() {
     if (!session) { setProfile(null); return; }
     currentProfile(session.user.id).then(p => {
       setProfile(p);
-      setProfileError(p ? "" : "El teu usuari no té perfil a la taula «profiles». Demana a un administrador que te'l creï.");
+      setProfileError(p ? "" : "El teu usuari no té perfil a la taula «admi_users». Demana a un administrador que te'l creï.");
     }).catch(e => setProfileError(String(e?.message || e)));
   }, [session?.user.id]);
+
+  // Permisos per apartat segons el rol (Configuració → Permisos per rol)
+  useEffect(() => { if (profile) permissionsFor(profile.role).then(setPerms).catch(() => setPerms(null)); }, [profile?.role]);
 
   useEffect(() => {
     if (session && profile) dashboardCounts().then(c => setOverdue(c.overdue)).catch(() => {});
@@ -53,7 +58,11 @@ export default function App() {
   if (!authReady) return <div className="auth-screen"><section className="auth-card"><div className="brand-symbol"><House size={38} /></div><h1>MareMontis</h1><p>Gestió immobiliària</p><span>Comprovant la sessió…</span></section></div>;
   if (!session) return <LoginScreen />;
 
-  const canWrite = profile?.role === "admin" || profile?.role === "oficina";
+  const roleCanWrite = profile?.role === "admin" || profile?.role === "oficina";
+  const allowed = (s: Section) => !perms || perms[s].view;
+  const can = (s: Section) => roleCanWrite && (!perms || perms[s].create || perms[s].edit);
+  const canDelete = (s: Section) => roleCanWrite && (!perms || perms[s].delete);
+  const canWrite = can(section === "Inici" ? "Clients" : section);
   const go = (s: Section) => {
     setSection(s);
   };
@@ -68,7 +77,7 @@ export default function App() {
   const crumb = "";
 
   return (
-    <Shell section={section} crumb={crumb} profile={profile} email={session.user.email || ""} query={query} overdue={overdue}
+    <Shell section={section} crumb={crumb} visible={allowed} profile={profile} email={session.user.email || ""} query={query} overdue={overdue}
       onNavigate={go}
       onSearch={q => { setQuery(q); setSection("Clients"); setClientView({ mode: "list" }); }}
       onPick={h => {
@@ -77,10 +86,11 @@ export default function App() {
       }}
       onLogout={async () => { await supabase.auth.signOut(); setSection("Inici"); }}>
       {profileError && <div className="work-area"><Notice kind="error">{profileError}</Notice></div>}
+      {!allowed(section) && <div className="work-area"><Notice kind="error">El teu rol no té permís per veure l'apartat «{section}».</Notice></div>}
       <div style={{ display: section === "Clients" ? undefined : "none" }}>
-        <ClientsPage view={clientView} setView={setClientView} query={query} setQuery={setQuery} canWrite={canWrite} userId={session.user.id} />
+        <ClientsPage view={clientView} setView={setClientView} query={query} setQuery={setQuery} canWrite={can("Clients")} userId={session.user.id} />
       </div>
-      {section === "Inici" ? (
+      {!allowed(section) ? null : section === "Inici" ? (
         <Dashboard canWrite={canWrite} userName={profile?.full_name?.split(" ")[0] || ""} onNavigate={go} onOpenClient={openClient} onOpenProperty={openProperty} />
       ) : section === "Clients" ? null : section === "Immobles" ? (
         <PropertiesPage onOpenProperty={openProperty} canWrite={canWrite} />
@@ -96,9 +106,9 @@ export default function App() {
       ) : section === "Revisions" ? (
         <CasesPage canWrite={canWrite} userId={session.user.id} onOpenClient={openClient} />
       ) : section === "Contractes" ? (
-        <ContractsPage canWrite={profile?.role === "admin"} />
+        <ContractsPage canWrite={profile?.role === "admin" && can("Contractes")} canDelete={profile?.role === "admin" && canDelete("Contractes")} />
       ) : section === "Industrials" ? (
-        <IndustrialsPage canWrite={canWrite} />
+        <IndustrialsPage canWrite={canWrite} canDelete={canDelete("Industrials")} />
       ) : section === "Impostos" ? (
         <TaxesPage canWrite={canWrite} onOpenProperty={openProperty} />
       ) : section === "Estadístiques" ? (

@@ -47,15 +47,15 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Correu responsables | DE = correu del responsable; només elements en mal estat + observació | Inclòs | ✅ |
 | Correu propietari | En l'idioma del client; textos editables | Inclòs (Configuració → Textos de correu). Textos «revisió feta» i «revisió amb incidències» en català, castellà, anglès, francès, alemany i neerlandès, a partir del text anglès del PDF; la llista d'elements a revisar també es tradueix. Els traduïts surten «Pendent de revisar» fins que l'oficina els grava com a revisats (i en preparar el correu surt un avís). Amb incidències mai es fa servir el text «tot correcte». Textos per revisar a `docs/TEXTOS_CORREU.md` | 🟡 (falta que l'oficina revisi les traduccions) |
 | Imatges | Nom descriptiu; fotos genèriques d'inventari + específiques de cada revisió | Inclòs. Botons «Fer foto» (obre la càmera del mòbil/tauleta) i «Galeria»; les fotos es redueixen a 1920 px abans de pujar-les; en una revisió nova es poden fer fotos abans de gravar i es pugen en gravar. Bucket `fotos` privat, només imatges de fins a 15 MB | ✅ (permisos del bucket provats a Supabase; falta una prova amb el mòbil real) |
-| Revisió des del mòbil o la tauleta | — (millora nova) | Revisions → casa → Nova revisió adaptada a pantalla tàctil: botons grans Bon/Mal, Dins/Fora i Avisar, lectures amb teclat numèric, «Marcar com a Bon tot el que falta», barra de Gravar sempre visible a baix | ✅ |
+| Revisió des del mòbil o la tauleta | Un operari va a la casa amb una tauleta, marca què està bé i què no a tots els camps i fa fotos (càmera o galeria) | Revisions → casa → Nova revisió adaptada a pantalla tàctil: **Bé / Mal a totes les files** (aigua, llum, gas, alarma, calefacció, pintura i parets amb Dins/Fora, i estat de la casa), Avisar i observacions a cadascuna, **botons «Foto» (càmera) i «Galeria» a cada element** (la foto queda amb el nom de l'element), ratlla taronja i comptador «Marcats X de N» per veure què falta (avís en gravar si en falta algun), «Marcar com a Bé tot el que falta», barra de Gravar sempre visible. A la tauleta vertical es veu en targetes amb botons grans; a l'apaïsada, taula amb botons per al dit. L'informe PDF i els correus inclouen el Bé/Mal de les instal·lacions | ✅ (falta prova amb una tauleta real) |
 | Tipus de contracte | Taula amb descripció, preu, núm. revisions i opcions (revisió, renda 210, visites, claus, rebuts) | Inclòs (menú Contractes). A la fitxa, les pestanyes Impostos, Claus i Revisions s'amaguen si el contracte de la finca no les inclou; el llistat de Renda/M-210 i la nova entrega de claus només mostren les finques amb el servei (el control de cases ja calculava les revisions segons el contracte). Sense contracte assignat, tot habilitat | ✅ (visites i rebuts: encara no hi ha cap funció a amagar) |
 | Planificació revisions | Octubre–juny, sense Nadal ni Setmana Santa, cada 2,5 mesos, editable; complementàries | Inclòs | ✅ |
 | Renda / M-210 | Llistat M-210, pagaments, filtres per cognom i zona | Resum per exercici, marcar pagats, llistat M-210 i exportació Excel | 🟡 (fórmula a validar) |
 | Fitxer AEAT i NRC | Generar fitxer per a l'AEAT i comprovar el retorn del banc | — | ⏳ (cal l'especificació dels fitxers) |
 | Importació IBI | Incorporar fitxers d'IBI | Importació de CSV per referència cadastral | 🟡 (cal un exemple del fitxer real) |
 | Comptabilitat | ODBC a la taula d'immobles amb els mateixos noms de camp; «Impostos pagament = S» + data; factures d'inici d'any només clients no de baixa | — | ⏳ |
-| Llistats | — | Exportació Excel a Claus, Revisions i Impostos | 🟡 |
-| Estadístiques | Estadístiques i informes calculats sobre les dades (sense detallar) | Menú Estadístiques (només consulta): cartera de clients i finques (residents, població, zona, contracte, lloguer, idioma, país, baixes per any) i activitat per any (revisions i incidències per mes, notes de servei, alertes, claus, impostos) | 🟡 (informes concrets a validar) |
+| Llistats | Llistats en Excel i en PDF | Botons «Excel» i «PDF» a Clients, Immobles, Històric de baixes, Alertes, Claus, Revisions, Impostos i Llistat M-210 (el que es veu amb els filtres aplicats). A més, llistats a mida des d'Estadístiques | ✅ |
+| Estadístiques | De totes les dades dels clients i dels immobles, triant de quines dades es fa | Menú «Estadístiques i llistats» (només consulta): es tria clients o immobles, quins (actius/baixes/tots + filtres per qualsevol camp), per quin camp s'agrupa (i un segon camp per a taula creuada) i què es compta (nombre, suma o mitjana: preu del contracte, impostos de l'any triat, jardí, piscina…). Mode «Llistat» amb les columnes triades. Excel i PDF (amb gràfic de barres). Les configuracions es poden desar a l'ordinador | 🟡 (a provar amb les dades reals) |
 | Còpia de seguretat | — | Configuració → Còpia de seguretat: un Excel amb un full per taula i un full «Resum» (només administradors, només lectura; les fotos no s'hi inclouen) | ✅ |
 | SMS | Botó a la pantalla antiga | — | ⏳ (no s'esmenta a les anotacions) |
 | Reindexar | Manteniment de la base de dades antiga | No cal (Supabase/PostgreSQL) | ❌ |
@@ -70,3 +70,31 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 5. **Enviament de correu sense obrir Outlook** (amb fotos adjuntes) → cal un servei de correu (p. ex. el compte SMTP de l'empresa o Resend) i una funció al servidor.
 6. ~~**Tipus de contracte que habiliten funcions**~~ → fet. Queda pendent quan existeixin les funcions de visites i rebuts.
 7. **Migració de les dades reals** del programa antic (DBF) → importació inicial de clients, finques, impostos, incidències i historial.
+
+## Canvis del document «cambios programa INMO» (25/10/2026)
+
+| Punt | Programa nou | Estat |
+|---|---|---|
+| Alta client sense cònjuge ni matrícules | L'alta només demana les dades del client; cònjuge/copropietaris i matrícules s'afegeixen a les pestanyes de la fitxa | ✅ |
+| Ruta de la carpeta a l'ordinador | Camp «Ruta de la carpeta a l'ordinador» a Documental i observacions, amb botó «Copiar» a la fitxa | ✅ |
+| Editar a la mateixa pestanya | «Modificar client» edita dins la fitxa (pestanyes Client, Cònjuge - copropietaris i Matrícules); «Guardar» i «Cancel·lar» a la barra de baix | ✅ |
+| Capçalera fixa | Capçalera del client, finques i pestanyes queden fixes; només es mou el contingut. El menú lateral també queda fix | ✅ |
+| Finca de baixa en vermell | A la capçalera de la fitxa, a la franja «Finca seleccionada» i a la llista de clients | ✅ |
+| Inicials / nom reduït | Només «Nom reduït» | ✅ |
+| Codi client i subcompte a mà | Sense número per defecte; el codi només surt a l'alta i a la capçalera (no a la llista ni a la pestanya Client). Subcompte escrit a mà (`clients.account_code` deixa de ser calculat) | ✅ |
+| Desplegables d'alta | Nacionalitat, província, país i país de naixement; codi postal ↔ població s'omplen sols | ✅ |
+| Formularis horitzontals | Dades del client en 4 columnes i panells a l'ample | ✅ |
+| Fletxes a la llista de clients | ↑ ↓ per moure's, Retorn per obrir | ✅ |
+| Lloguer | Desplegable «Lloguer vacacional» / «Lloguer urbà» | ✅ |
+| Núm. d'administració i oficina de la clau | Només a la pestanya Claus (armari + oficina: Torroella de Montgrí, L'Estartit, L'Escala, Pals); ja no surt a la pestanya Finca ni a la capçalera | ✅ |
+| Cònjuge / copropietaris per finca | Cada finca té els seus (`client_related_persons.property_id`); els antics sense finca surten a totes amb «Assignar només a aquesta finca» | ✅ |
+| Impostos | Sense «Exercici» ni «Any nou»: mostra l'any de treball; dues columnes de dos panells i observacions a baix | ✅ |
+| Canvi d'any | Configuració → Canvi d'any (crea els impostos del nou any copiant l'anterior). Funció `admi_change_year` | ✅ |
+| Tipus de contracte i industrials | Botó «Esborrar» només si no s'usen (contracte assignat a cap finca; industrial sense claus, incidències, notes ni equipaments); si no, avís | ✅ |
+| Permisos per rol | Configuració → Permisos per rol: veure / crear / modificar / esborrar per apartat del menú (`admi_role_permissions`). Ho aplica la pantalla; la base de dades continua limitant per rol (RLS) | ✅ |
+| Idiomes | Configuració → Idiomes: afegir, treure (si cap client el té) o desactivar (`admi_languages`) | ✅ |
+| Còpies de seguretat | Automàtiques (cada dia o setmana, a l'hora triada, pg_cron) i manuals, en SQL per a l'SQL Editor, amb data i hora; es guarden les 30 últimes automàtiques (`admi_backups`, `admi_run_backup`). També en Excel | ✅ |
+| Logo | Logo MareMontis a dalt del menú | ✅ |
+| Prefix `admi_` a les taules | Totes les taules i vistes porten `admi_` i un nom descriptiu (p. ex. `admi_users`, `admi_change_history`, `admi_tradespeople`, `admi_property_revisions`). Migració `20261025000002`; l'esquema `old_demo` (demo antiga) esborrat | ✅ |
+| Icona a l'escriptori | La web és instal·lable (PWA): Chrome/Edge → «Instal·lar MareMontis INMO» crea l'accés directe amb el logo i obre el programa en una finestra pròpia. `public/manifest.webmanifest`, icones a `public/icons/`, `public/sw.js` (sense memòria cau, sempre la darrera versió) | ✅ |
+| Iniciar sessió sempre | La sessió es guarda només mentre la finestra és oberta (`sessionStorage`): en obrir el programa sempre demana usuari i contrasenya (cada usuari té els seus permisos) | ✅ |

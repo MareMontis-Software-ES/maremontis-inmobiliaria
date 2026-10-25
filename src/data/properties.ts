@@ -19,9 +19,9 @@ export interface PropertyRow {
 type Row = Record<string, any>;
 
 export async function listProperties(): Promise<PropertyRow[]> {
-  const { data, error } = await supabase.from("properties")
+  const { data, error } = await supabase.from("admi_properties")
     .select(`id, admin_number, street_type, address, zone, municipality, postal_code, province, country, rental_use, status, baixa_date,
-             property_owners(ownership_percentage, client_id, clients(first_name, last_name), client_related_persons(first_name, last_name))`)
+             property_owners:admi_property_owners(ownership_percentage, client_id, clients:admi_clients(first_name, last_name), client_related_persons:admi_client_related_persons(first_name, last_name))`)
     .order("admin_number");
   if (error) throw error;
   return (data || []).map((p: Row) => ({
@@ -46,18 +46,18 @@ export async function dashboardCounts() {
     return n || 0;
   };
   const [clients, properties, alerts, overdue, keys, incidents] = await Promise.all([
-    count("clients", q => q.eq("status", "active")),
-    count("properties", q => q.eq("status", "active")),
-    count("alerts", q => q.is("completed_at", null)),
-    count("alerts", q => q.is("completed_at", null).lt("due_date", new Date().toISOString().slice(0, 10))),
-    count("key_movements", q => q.is("returned_at", null)),
-    count("incidents", q => q.neq("status", "tancada")),
+    count("admi_clients", q => q.eq("status", "active")),
+    count("admi_properties", q => q.eq("status", "active")),
+    count("admi_alerts", q => q.is("completed_at", null)),
+    count("admi_alerts", q => q.is("completed_at", null).lt("due_date", new Date().toISOString().slice(0, 10))),
+    count("admi_key_movements", q => q.is("returned_at", null)),
+    count("admi_incidents", q => q.neq("status", "tancada")),
   ]);
   return { clients, properties, alerts, overdue, keys, incidents };
 }
 
 export async function recentProperties(limit = 5) {
-  const { data, error } = await supabase.from("properties")
+  const { data, error } = await supabase.from("admi_properties")
     .select("id, admin_number, street_type, address, municipality")
     .eq("status", "active").order("updated_at", { ascending: false }).limit(limit);
   if (error) throw error;

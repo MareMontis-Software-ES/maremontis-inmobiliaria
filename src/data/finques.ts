@@ -13,13 +13,15 @@ export type FieldType = "text" | "num" | "money" | "date" | "select" | "password
 export interface FieldDef { k: string; label: string; type?: FieldType; options?: [string, string][]; wide?: boolean; required?: boolean }
 export interface FieldGroup { id: string; title: string; fields: FieldDef[] }
 
-export const RENTAL_USES: [string, string][] = [["turistic", "Lloguer turístic"], ["urba", "Lloguer urbà"]];
+export const RENTAL_USES: [string, string][] = [["turistic", "Lloguer vacacional"], ["urba", "Lloguer urbà"]];
+/** Camps que es gestionen a la pestanya Claus (el núm. d'administració només serveix per a l'armari de claus) */
+export const KEY_FIELDS = ["admin_number", "key_office"];
 
 export function propertyGroups(zones: [string, string][], contractTypes: [string, string][], streetTypes: string[]): FieldGroup[] {
   const st = streetTypes.map(x => [x, x] as [string, string]);
   return [
     { id: "ident", title: "Dades de la finca", fields: [
-      { k: "admin_number", label: "Núm. administració (armari)", type: "num", required: true },
+      { k: "admin_number", label: "Núm. administració (armari de claus)", type: "num", required: true },
       { k: "rental_use", label: "Lloguer", type: "select", options: RENTAL_USES },
       { k: "street_type", label: "Tipus de via", type: "select", options: st },
       { k: "zone", label: "Zona", type: "select", options: zones },
@@ -95,8 +97,8 @@ export interface Owner { client_id: string | null; related_person_id: string | n
 const ALL_KEYS = () => propertyGroups([], [], []).flatMap(g => g.fields);
 
 export async function getProperty(id: string): Promise<{ form: PropertyForm; owners: Owner[] }> {
-  const { data, error } = await supabase.from("properties")
-    .select(`*, property_owners(client_id, related_person_id, ownership_percentage, is_main, clients(first_name, last_name), client_related_persons(first_name, last_name))`)
+  const { data, error } = await supabase.from("admi_properties")
+    .select(`*, property_owners:admi_property_owners(client_id, related_person_id, ownership_percentage, is_main, clients:admi_clients(first_name, last_name), client_related_persons:admi_client_related_persons(first_name, last_name))`)
     .eq("id", id).single();
   if (error) throw error;
   const form: PropertyForm = { id: data.id, status: data.status, baixa_date: s(data.baixa_date) };
@@ -141,7 +143,7 @@ function toDb(form: PropertyForm) {
 
 /** Comprova si el número d'administració ja l'usa una altra finca activa */
 export async function adminNumberTaken(n: number, exceptId?: string): Promise<string | null> {
-  let q = supabase.from("properties").select("id, street_type, address").eq("admin_number", n).eq("status", "active");
+  let q = supabase.from("admi_properties").select("id, street_type, address").eq("admin_number", n).eq("status", "active");
   if (exceptId) q = q.neq("id", exceptId);
   const { data, error } = await q;
   if (error) throw error;
@@ -153,22 +155,22 @@ export async function saveProperty(form: PropertyForm, owners: Owner[]): Promise
   const row = toDb(form);
   let id = form.id;
   if (id) {
-    const { error } = await supabase.from("properties").update(row).eq("id", id);
+    const { error } = await supabase.from("admi_properties").update(row).eq("id", id);
     if (error) throw error;
   } else {
-    const { data, error } = await supabase.from("properties").insert({ ...row, status: "active" }).select("id").single();
+    const { data, error } = await supabase.from("admi_properties").insert({ ...row, status: "active" }).select("id").single();
     if (error) throw error;
     id = data.id as string;
   }
   // Titulars: es substitueixen tots (és una llista curta)
-  const del = await supabase.from("property_owners").delete().eq("property_id", id);
+  const del = await supabase.from("admi_property_owners").delete().eq("property_id", id);
   if (del.error) throw del.error;
   const rows = owners.filter(o => o.client_id || o.related_person_id).map((o, i) => ({
     property_id: id, client_id: o.client_id, related_person_id: o.related_person_id,
     ownership_percentage: Number(o.percentage || 0), is_main: i === 0,
   }));
   if (rows.length) {
-    const ins = await supabase.from("property_owners").insert(rows);
+    const ins = await supabase.from("admi_property_owners").insert(rows);
     if (ins.error) throw ins.error;
   }
   return id!;
@@ -179,14 +181,14 @@ export async function setPropertyBaixa(id: string, baixa: boolean, userId?: stri
   const patch: Row = baixa
     ? { status: "baixa", baixa_date: todayISO(), baixa_by: userId || null }
     : { status: "active", baixa_date: null, baixa_by: null, ...(newAdminNumber ? { admin_number: newAdminNumber } : {}) };
-  const { error } = await supabase.from("properties").update(patch).eq("id", id);
+  const { error } = await supabase.from("admi_properties").update(patch).eq("id", id);
   if (error) throw error;
 }
 
 /** Client principal d'una finca (per obrir la fitxa des de la llista d'immobles) */
 export async function mainClientOf(propertyId: string): Promise<string | null> {
-  const { data, error } = await supabase.from("property_owners")
-    .select("client_id, is_main, client_related_persons(client_id)").eq("property_id", propertyId);
+  const { data, error } = await supabase.from("admi_property_owners")
+    .select("client_id, is_main, client_related_persons:admi_client_related_persons(client_id)").eq("property_id", propertyId);
   if (error) throw error;
   const rows = (data || []) as Row[];
   const main = rows.find(r => r.is_main && r.client_id) || rows.find(r => r.client_id);
@@ -195,8 +197,8 @@ export async function mainClientOf(propertyId: string): Promise<string | null> {
 
 export async function lookups() {
   const [z, c] = await Promise.all([
-    supabase.from("zones").select("code, name").order("code"),
-    supabase.from("contract_types").select("id, description").eq("active", true).order("description"),
+    supabase.from("admi_zones").select("code, name").order("code"),
+    supabase.from("admi_contract_types").select("id, description").eq("active", true).order("description"),
   ]);
   if (z.error) throw z.error;
   if (c.error) throw c.error;
@@ -207,7 +209,7 @@ export async function lookups() {
 }
 
 export async function clientPickList(): Promise<{ id: string; name: string; code: number }[]> {
-  const { data, error } = await supabase.from("clients").select("id, client_code, first_name, last_name").eq("status", "active").order("last_name");
+  const { data, error } = await supabase.from("admi_clients").select("id, client_code, first_name, last_name").eq("status", "active").order("last_name");
   if (error) throw error;
   return (data || []).map((c: Row) => ({ id: c.id, code: c.client_code, name: fullName(c.first_name, c.last_name) }));
 }
@@ -240,7 +242,7 @@ export const TAX_FIELDS: FieldDef[] = [
 export type TaxForm = Record<string, string> & { id?: string; paid?: string; billing?: string };
 
 export async function listTaxes(propertyId: string): Promise<TaxForm[]> {
-  const { data, error } = await supabase.from("property_taxes").select("*").eq("property_id", propertyId).order("tax_year", { ascending: false });
+  const { data, error } = await supabase.from("admi_property_taxes").select("*").eq("property_id", propertyId).order("tax_year", { ascending: false });
   if (error) throw error;
   return (data || []).map((t: Row) => {
     const f: TaxForm = { id: t.id, paid: t.paid ? "true" : "", billing: t.billing ? "true" : "", taxable_base: s(t.taxable_base), rent_quota: s(t.rent_quota) };
@@ -277,7 +279,7 @@ export async function saveTax(propertyId: string, f: TaxForm): Promise<void> {
   if (row.tax_rate == null) row.tax_rate = 19;
   if (row.cadastral_value == null) row.cadastral_value = 0;
   if (row.ibi_quota == null) row.ibi_quota = 0;
-  const q = f.id ? supabase.from("property_taxes").update(row).eq("id", f.id) : supabase.from("property_taxes").insert(row);
+  const q = f.id ? supabase.from("admi_property_taxes").update(row).eq("id", f.id) : supabase.from("admi_property_taxes").insert(row);
   const { error } = await q;
   if (error) throw error;
 }
@@ -291,8 +293,8 @@ export interface KeyMove {
 }
 
 export async function listKeyMoves(propertyId: string): Promise<KeyMove[]> {
-  const { data, error } = await supabase.from("key_movements")
-    .select("*, industrials(name), profiles:delivered_by(full_name)")
+  const { data, error } = await supabase.from("admi_key_movements")
+    .select("*, industrials:admi_tradespeople(name), profiles:delivered_by(full_name)")
     .eq("property_id", propertyId).order("delivered_at", { ascending: false });
   if (error) throw error;
   const today = todayISO();
@@ -305,13 +307,13 @@ export async function listKeyMoves(propertyId: string): Promise<KeyMove[]> {
 }
 
 export async function listIndustrials(): Promise<[string, string][]> {
-  const { data, error } = await supabase.from("industrials").select("id, name, trade").eq("active", true).order("name");
+  const { data, error } = await supabase.from("admi_tradespeople").select("id, name, trade").eq("active", true).order("name");
   if (error) throw error;
   return (data || []).map((i: Row) => [i.id, i.trade ? `${i.name} (${i.trade})` : i.name]);
 }
 
 export async function createKeyMove(propertyId: string, userId: string | undefined, f: { delivered_at: string; industrial_id: string; delivered_to: string; reason: string; observations: string; expected_return: string }) {
-  const { error } = await supabase.from("key_movements").insert({
+  const { error } = await supabase.from("admi_key_movements").insert({
     property_id: propertyId, delivered_by: userId || null,
     delivered_at: f.delivered_at || todayISO(),
     delivered_to_industrial_id: f.industrial_id || null,
@@ -323,6 +325,19 @@ export async function createKeyMove(propertyId: string, userId: string | undefin
 }
 
 export async function returnKey(id: string, date: string | null) {
-  const { error } = await supabase.from("key_movements").update({ returned_at: date }).eq("id", id);
+  const { error } = await supabase.from("admi_key_movements").update({ returned_at: date }).eq("id", id);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Clau de la finca: núm. d'administració (= armari) i oficina on es guarda
+// ---------------------------------------------------------------------------
+export async function getPropertyKey(id: string): Promise<{ admin_number: string; key_office: string; status: string }> {
+  const { data, error } = await supabase.from("admi_properties").select("admin_number, key_office, status").eq("id", id).single();
+  if (error) throw error;
+  return { admin_number: s(data.admin_number), key_office: s(data.key_office), status: s(data.status) };
+}
+export async function savePropertyKey(id: string, adminNumber: number, keyOffice: string) {
+  const { error } = await supabase.from("admi_properties").update({ admin_number: adminNumber, key_office: keyOffice || null }).eq("id", id);
   if (error) throw error;
 }

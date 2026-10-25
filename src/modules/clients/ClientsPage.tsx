@@ -4,14 +4,15 @@
 //  · es tanca amb la X (avisa si hi ha canvis sense gravar)
 //  · les fitxes es mantenen encara que es canviï d'apartat del menú
 import { useEffect, useRef, useState } from "react";
-import { List, Plus, X } from "lucide-react";
-import { emptyClient, getClient, isClientCodeTaken, listClients, nextClientCode, saveClient, setClientStatus } from "../../data/clients";
+import { List, Plus, Save, Users, X } from "lucide-react";
+import { emptyClient, findDuplicates, getClient, isAccountCodeTaken, isClientCodeTaken, listClients, saveClient, setClientStatus } from "../../data/clients";
 import { listResponsibles } from "../../data/lookups";
 import { errorText } from "../../lib/supabase";
+import { accountCode } from "../../lib/format";
 import { Notice } from "../../components/ui";
 import { ClientList } from "./ClientList";
 import { ClientDetail, type ClientTab } from "./ClientDetail";
-import { ClientForm } from "./ClientForm";
+import { ClientForm, clientErrors, hasClientErrors } from "./ClientForm";
 import type { ClientFull, ClientSummary, Profile, PropertyLink } from "../../types";
 
 /** Ordres que arriben de fora (menú, Inici, Immobles, Alertes…) */
@@ -125,6 +126,7 @@ export function ClientsPage({ view, query, setQuery, canWrite, userId }: Props) 
       <div style={{ display: active === "list" ? undefined : "none" }}>
         {listError && <div className="work-area"><Notice kind="error">No s'han pogut carregar els clients: {listError}</Notice></div>}
         <ClientList clients={clients} query={query} setQuery={setQuery} canWrite={canWrite} loading={loading}
+          active={active === "list"}
           onOpen={id => open(id)}
           onOpenProperty={(pid, cid) => open(cid, { propertyId: pid, tab: "finca" })}
           onNew={() => open(null)} />
@@ -158,7 +160,8 @@ function ClientFicha({ id, request, clients, responsibles, canWrite, userId, onN
 }) {
   const [current, setCurrent] = useState<{ full: ClientFull; properties: PropertyLink[] } | null>(null);
   const [mode, setMode] = useState<"detail" | "edit" | "new">(id ? "detail" : "new");
-  const [formInitial, setFormInitial] = useState<ClientFull | null>(null);
+  const [draft, setDraft] = useState<ClientFull | null>(id ? null : emptyClient());
+  const [tried, setTried] = useState(false);
   const [propertyId, setPropertyId] = useState<string | null | "new" | undefined>(undefined);
   const [tab, setTab] = useState<ClientTab>("client");
   const [error, setError] = useState("");
@@ -171,12 +174,13 @@ function ClientFicha({ id, request, clients, responsibles, canWrite, userId, onN
     return r;
   };
 
-  // Client nou
-  useEffect(() => {
-    if (id) return;
-    setMode("new"); onName("Nou client");
-    nextClientCode().then(code => setFormInitial(emptyClient(code))).catch(e => { setError(errorText(e)); setFormInitial(emptyClient("")); });
-  }, []);
+  function startEdit(full: ClientFull) {
+    setDraft(structuredClone(full)); setTried(false); setMode("edit");
+    setTab(t => (["client", "conjuge", "matricules"].includes(t) ? t : "client"));
+  }
+
+  // Client nou: el codi i el subcompte s'escriuen a mà (no es proposa cap número)
+  useEffect(() => { if (!id) onName("Nou client"); }, []);
 
   // Càrrega i ordres externes (obrir amb una finca o pestanya concreta, anterior/següent…)
   useEffect(() => {
@@ -186,25 +190,39 @@ function ClientFicha({ id, request, clients, responsibles, canWrite, userId, onN
       if (request.propertyId !== undefined) setPropertyId(request.propertyId);
       else if (current?.full.client.id !== id) setPropertyId(undefined);
       if (request.tab) setTab(request.tab);
-      if (request.edit) { setFormInitial(structuredClone(r.full)); setMode("edit"); }
-      else if (current?.full.client.id !== id) setMode("detail");
+      if (request.edit) startEdit(r.full);
+      else if (current?.full.client.id !== id) { setMode("detail"); setDraft(null); }
     }).catch(e => setError(errorText(e)));
   }, [id, request.n]);
 
   useEffect(() => { onDirty(mode === "edit" || mode === "new"); }, [mode]);
 
-  async function handleSave(full: ClientFull) {
-    setSaving(true); setError("");
+  async function handleSave() {
+    if (!draft) return;
+    const isNew = mode === "new";
+    setTried(true); setError("");
+    const errs = clientErrors(draft, isNew);
+    const pctBad = draft.related.some(r => r.ownership_percentage && (Number(r.ownership_percentage) < 0 || Number(r.ownership_percentage) > 100));
+    if (hasClientErrors(errs)) { setError("Revisa els camps marcats en vermell."); if (!isNew) setTab("client"); return; }
+    if (pctBad) { setError("El % de propietat d'un cònjuge o copropietari ha de ser entre 0 i 100."); setTab("conjuge"); return; }
+    setSaving(true);
     try {
-      if (await isClientCodeTaken(Number(full.client.client_code), full.client.id)) { setError(`El codi ${full.client.client_code} ja està assignat a un altre client.`); return; }
-      const isNew = !full.client.id;
-      const newId = await saveClient(full);
+      if (isNew && await isClientCodeTaken(Number(draft.client.client_code))) { setError(`El codi ${draft.client.client_code} ja està assignat a un altre client.`); return; }
+      if (isNew && draft.client.account_code && await isAccountCodeTaken(draft.client.account_code)) { setError(`El subcompte ${draft.client.account_code} ja el té un altre client.`); return; }
+      const dups = await findDuplicates(draft).catch(() => []);
+      if (dups.length && !window.confirm(`Atenció: possible client duplicat.\n\n${dups.map(d => `· ${accountCode(d.client_code)} ${d.name}${d.status !== "active" ? " (baixa)" : ""}: ${d.fields.join(", ")}`).join("\n")}\n\nVols gravar igualment?`)) return;
+      const newId = await saveClient(draft);
       await onListChanged();
-      setMode("detail");
+      setMode("detail"); setDraft(null); setTried(false);
       if (isNew) { setPropertyId("new"); setTab("finca"); onCreated(newId); } // client nou → alta de la seva primera finca
       else await load(newId);
     } catch (e) { setError("No s'ha pogut desar. " + errorText(e)); }
     finally { setSaving(false); }
+  }
+
+  function handleCancel() {
+    if (mode === "new") { onClose(); return; }
+    setMode("detail"); setDraft(null); setTried(false); setError("");
   }
 
   async function toggleStatus() {
@@ -215,13 +233,20 @@ function ClientFicha({ id, request, clients, responsibles, canWrite, userId, onN
     try { await setClientStatus(c.id!, goingOff ? "inactive" : "active"); await load(c.id!); await onListChanged(); } catch (e) { setError(errorText(e)); }
   }
 
-  if (mode === "new" || mode === "edit") {
-    if (!formInitial) return <div className="work-area list-view">{error ? <Notice kind="error">{error}</Notice> : <p className="empty-line">Carregant…</p>}</div>;
+  // ---- Alta: només les dades del client (cònjuge i matrícules, després a la fitxa) ----
+  if (mode === "new") {
     return (
       <div className="work-area list-view">
-        <ClientForm key={(formInitial.client.id || "new") + mode} initial={formInitial} responsibles={responsibles} saving={saving} error={error}
-          onSave={handleSave}
-          onCancel={() => { if (mode === "edit") setMode("detail"); else onClose(); }} />
+        <section className="new-client-form">
+          <div className="new-client-title"><Users size={22} /><strong>Alta de client</strong></div>
+          {error && <Notice kind="error">{error}</Notice>}
+          <ClientForm value={draft!} onChange={setDraft} responsibles={responsibles} isNew showErrors={tried} />
+          <p className="hint">Després de gravar podràs donar d'alta la seva finca; el cònjuge, els copropietaris i les matrícules s'afegeixen a les pestanyes de la fitxa.</p>
+          <div className="form-actions sticky-actions">
+            <button className="cancel-btn" onClick={handleCancel} disabled={saving}><X size={16} /> Cancel·lar</button>
+            <button className="save-btn" onClick={handleSave} disabled={saving}><Save size={16} /> {saving ? "Desant…" : "Guardar"}</button>
+          </div>
+        </section>
       </div>
     );
   }
@@ -236,10 +261,13 @@ function ClientFicha({ id, request, clients, responsibles, canWrite, userId, onN
       full={current.full} properties={current.properties} responsibles={responsibles} canWrite={canWrite} userId={userId}
       position={{ index, total: clients.length }} error={error}
       tab={tab} propertyId={pid}
+      editing={mode === "edit"} draft={draft} onDraft={setDraft} showErrors={tried} saving={saving}
       onTab={setTab}
-      onSelectProperty={p => { setPropertyId(p); if (p === "new" || tab === "client" || tab === "conjuge" || tab === "matricules") setTab("finca"); }}
-      onPropertySaved={async p => { try { await load(id!); } catch (e) { setError(errorText(e)); } void onListChanged(); setPropertyId(p); setTab("finca"); }}
-      onEdit={() => { setFormInitial(structuredClone(current.full)); setMode("edit"); }}
+      onSelectProperty={p => { setPropertyId(p); if (p === "new" || tab === "client" || tab === "matricules") setTab("finca"); }}
+      onPropertySaved={async (p, t) => { try { await load(id!); } catch (e) { setError(errorText(e)); } void onListChanged(); setPropertyId(p); setTab(t || "finca"); }}
+      onEdit={() => startEdit(current.full)}
+      onSave={handleSave}
+      onCancel={handleCancel}
       onToggleStatus={toggleStatus}
       onPrev={() => index > 0 && onNavigate(clients[index - 1].id)}
       onNext={() => index < clients.length - 1 && onNavigate(clients[index + 1].id)}

@@ -1,15 +1,14 @@
 // Pantalles de manteniment: Contractes, Industrials i Configuració (usuaris, zones, textos de correu).
 // Totes segueixen el mateix patró: llista a l'esquerra, fitxa a la dreta.
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, Download, FileText, Mail, MapPin, Plus, Save, Users, Wrench, X } from "lucide-react";
+import { CalendarDays, Check, Download, FileText, Languages, Mail, MapPin, Plus, Save, ShieldCheck, Trash2, Users, Wrench, X } from "lucide-react";
 import { CheckInput, Empty, Notice, Panel, SelectInput, TextArea, TextInput } from "../../components/ui";
 import { errorText } from "../../lib/supabase";
-import { LANGUAGES } from "../../lib/constants";
-import { CONTRACT_FLAGS, emptyContractType, emptyIndustrial, listContractTypes, listIndustrialsFull, listProfiles, listTemplates, listZones,
+import { useLanguages } from "../../data/settings";
+import { BackupsTab, LanguagesTab, PermissionsTab, YearTab } from "./ConfigTabs";
+import { CONTRACT_FLAGS, deleteContractType, deleteIndustrial, emptyContractType, emptyIndustrial, listContractTypes, listIndustrialsFull, listProfiles, listTemplates, listZones,
   saveContractType, saveIndustrial, saveProfile, saveTemplate, saveZone, TEMPLATE_KINDS, TRADES,
   type ContractType, type Industrial, type ProfileRow, type Template } from "../../data/admin";
-import { backupFileName, buildBackupSheets } from "../../data/backup";
-import { downloadXlsx } from "../../lib/xlsx";
 
 function PageHead({ kicker, title, text, action }: { kicker: string; title: string; text: string; action?: ReactNode }) {
   return <div className="page-title"><div><small>{kicker}</small><h1>{title}</h1><p>{text}</p></div>{action}</div>;
@@ -18,7 +17,7 @@ function PageHead({ kicker, title, text, action }: { kicker: string; title: stri
 // =====================================================================
 // CONTRACTES (PDF 2: taula de tipus de contracte que habilita funcions)
 // =====================================================================
-export function ContractsPage({ canWrite }: { canWrite: boolean }) {
+export function ContractsPage({ canWrite, canDelete }: { canWrite: boolean; canDelete: boolean }) {
   const [rows, setRows] = useState<ContractType[]>([]);
   const [sel, setSel] = useState<ContractType | null>(null);
   const [error, setError] = useState("");
@@ -28,6 +27,10 @@ export function ContractsPage({ canWrite }: { canWrite: boolean }) {
   async function save() {
     if (!sel?.description.trim()) { setError("Cal una descripció."); return; }
     try { await saveContractType(sel); setSel(null); setError(""); await load(); } catch (e) { setError(errorText(e)); }
+  }
+  async function remove() {
+    if (!sel?.id || !window.confirm(`Esborrar el tipus de contracte «${sel.description}»?`)) return;
+    try { const why = await deleteContractType(sel.id); if (why) { setError(why); return; } setSel(null); setError(""); await load(); } catch (e) { setError(errorText(e)); }
   }
 
   return (
@@ -58,7 +61,9 @@ export function ContractsPage({ canWrite }: { canWrite: boolean }) {
               {CONTRACT_FLAGS.map(([k, l]) => <CheckInput key={k} label={l} checked={!!sel[k]} onChange={v => setSel({ ...sel, [k]: v })} />)}
               <CheckInput label="Actiu" checked={sel.active} onChange={v => setSel({ ...sel, active: v })} />
             </div>
-            {canWrite && <div className="tab-actions inline"><button className="save-btn" onClick={save}><Save size={16} /> Gravar</button><button className="cancel-btn" onClick={() => setSel(null)}><X size={16} /> Cancel·lar</button></div>}
+            {canWrite && <div className="tab-actions inline"><button className="save-btn" onClick={save}><Save size={16} /> Guardar</button><button className="cancel-btn" onClick={() => setSel(null)}><X size={16} /> Cancel·lar</button>
+              {sel.id && canDelete && <button className="cancel-btn danger-btn" onClick={remove}><Trash2 size={16} /> Esborrar</button>}</div>}
+            {sel.id && !!sel.uses && <p className="hint">Té {sel.uses} finca{sel.uses > 1 ? "s" : ""} activa{sel.uses > 1 ? "s" : ""}: no es pot esborrar mentre estigui assignat.</p>}
           </Panel>
         )}
       </div>
@@ -69,7 +74,7 @@ export function ContractsPage({ canWrite }: { canWrite: boolean }) {
 // =====================================================================
 // INDUSTRIALS
 // =====================================================================
-export function IndustrialsPage({ canWrite }: { canWrite: boolean }) {
+export function IndustrialsPage({ canWrite, canDelete }: { canWrite: boolean; canDelete: boolean }) {
   const [rows, setRows] = useState<Industrial[]>([]);
   const [sel, setSel] = useState<Industrial | null>(null);
   const [q, setQ] = useState("");
@@ -81,6 +86,10 @@ export function IndustrialsPage({ canWrite }: { canWrite: boolean }) {
   async function save() {
     if (!sel?.name.trim()) { setError("Cal el nom."); return; }
     try { await saveIndustrial(sel); setSel(null); setError(""); await load(); } catch (e) { setError(errorText(e)); }
+  }
+  async function remove() {
+    if (!sel?.id || !window.confirm(`Esborrar l'industrial «${sel.name}»?`)) return;
+    try { const why = await deleteIndustrial(sel.id); if (why) { setError(why); return; } setSel(null); setError(""); await load(); } catch (e) { setError(errorText(e)); }
   }
 
   return (
@@ -114,7 +123,8 @@ export function IndustrialsPage({ canWrite }: { canWrite: boolean }) {
               <TextArea label="Observacions" value={sel.observations} onChange={v => setSel({ ...sel, observations: v })} />
               <CheckInput label="Actiu" checked={sel.active} onChange={v => setSel({ ...sel, active: v })} />
             </div>
-            {canWrite && <div className="tab-actions inline"><button className="save-btn" onClick={save}><Save size={16} /> Gravar</button><button className="cancel-btn" onClick={() => setSel(null)}><X size={16} /> Cancel·lar</button></div>}
+            {canWrite && <div className="tab-actions inline"><button className="save-btn" onClick={save}><Save size={16} /> Guardar</button><button className="cancel-btn" onClick={() => setSel(null)}><X size={16} /> Cancel·lar</button>
+              {sel.id && canDelete && <button className="cancel-btn danger-btn" onClick={remove}><Trash2 size={16} /> Esborrar</button>}</div>}
           </Panel>
         )}
       </div>
@@ -125,17 +135,20 @@ export function IndustrialsPage({ canWrite }: { canWrite: boolean }) {
 // =====================================================================
 // CONFIGURACIÓ: usuaris, zones, textos de correu, còpia de seguretat
 // =====================================================================
+type ConfigTab = "usuaris" | "permisos" | "any" | "idiomes" | "zones" | "textos" | "copia";
 export function ConfigPage({ isAdmin }: { isAdmin: boolean }) {
-  const [tab, setTab] = useState<"usuaris" | "zones" | "textos" | "copia">("usuaris");
+  const [tab, setTab] = useState<ConfigTab>("usuaris");
   return (
     <div className="work-area list-view">
-      <PageHead kicker="ADMINISTRACIÓ" title="Configuració" text={isAdmin ? "Usuaris i permisos, zones, textos dels correus als propietaris i còpia de seguretat." : "Només els administradors poden canviar la configuració."} />
+      <PageHead kicker="ADMINISTRACIÓ" title="Configuració" text={isAdmin ? "Usuaris, permisos per rol, canvi d'any, idiomes, zones, textos dels correus i còpies de seguretat." : "Només els administradors poden canviar la configuració."} />
       <div className="record-tabs">
-        {([["usuaris", "Usuaris i permisos", Users], ["zones", "Zones", MapPin], ["textos", "Textos de correu", Mail], ["copia", "Còpia de seguretat", Download]] as const).map(([id, l, I]) =>
+        {([["usuaris", "Usuaris", Users], ["permisos", "Permisos per rol", ShieldCheck], ["any", "Canvi d'any", CalendarDays], ["idiomes", "Idiomes", Languages],
+          ["zones", "Zones", MapPin], ["textos", "Textos de correu", Mail], ["copia", "Còpies de seguretat", Download]] as const).map(([id, l, I]) =>
           <button key={id} className={tab === id ? "selected" : ""} onClick={() => setTab(id)}><I size={17} /><span>{l}</span></button>)}
       </div>
       <div className="tab-pad">
-        {tab === "usuaris" ? <UsersTab isAdmin={isAdmin} /> : tab === "zones" ? <ZonesTab isAdmin={isAdmin} /> : tab === "textos" ? <TemplatesTab isAdmin={isAdmin} /> : <BackupTab isAdmin={isAdmin} />}
+        {tab === "usuaris" ? <UsersTab isAdmin={isAdmin} /> : tab === "permisos" ? <PermissionsTab isAdmin={isAdmin} /> : tab === "any" ? <YearTab isAdmin={isAdmin} />
+          : tab === "idiomes" ? <LanguagesTab isAdmin={isAdmin} /> : tab === "zones" ? <ZonesTab isAdmin={isAdmin} /> : tab === "textos" ? <TemplatesTab isAdmin={isAdmin} /> : <BackupsTab isAdmin={isAdmin} />}
       </div>
     </div>
   );
@@ -202,7 +215,8 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
   const [error, setError] = useState("");
   const load = () => listTemplates().then(setRows).catch(e => setError(errorText(e)));
   useEffect(() => { void load(); }, []);
-  const langName = (l: string) => LANGUAGES.find(x => x[0] === l)?.[1] || l;
+  const languages = useLanguages();
+  const langName = (l: string) => languages.find(x => x[0] === l)?.[1] || l;
   return (
     <div className="master-detail">
       <Panel title="Textos del correu al propietari, per idioma" icon={Mail}
@@ -220,7 +234,7 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
         <Panel title={sel.id ? "Modificar text" : "Nou text"} icon={Mail}>
           <div className="form-grid">
             <SelectInput label="Tipus" value={sel.kind} onChange={v => setSel({ ...sel, kind: v })} options={TEMPLATE_KINDS} />
-            <SelectInput label="Idioma" value={sel.language} onChange={v => setSel({ ...sel, language: v })} options={LANGUAGES} />
+            <SelectInput label="Idioma" value={sel.language} onChange={v => setSel({ ...sel, language: v })} options={languages} />
             <TextInput label="Assumpte" value={sel.subject} onChange={v => setSel({ ...sel, subject: v })} wide />
             <TextArea label="Text del correu" value={sel.body} onChange={v => setSel({ ...sel, body: v })} rows={12} />
             <CheckInput label="Revisat (el text és correcte i es pot enviar)" checked={sel.reviewed} onChange={v => setSel({ ...sel, reviewed: v })} />
@@ -229,33 +243,5 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
         </Panel>
       )}
     </div>
-  );
-}
-
-function BackupTab({ isAdmin }: { isAdmin: boolean }) {
-  const [busy, setBusy] = useState("");
-  const [error, setError] = useState("");
-  const [ok, setOk] = useState("");
-
-  async function run() {
-    setError(""); setOk(""); setBusy("Preparant…");
-    try {
-      const { sheets, failed } = await buildBackupSheets((label, done, total) => setBusy(label ? `Llegint ${label} (${done + 1} de ${total})…` : "Generant l'Excel…"));
-      const name = backupFileName();
-      downloadXlsx(name, sheets);
-      setOk(`Descarregat «${name}».` + (failed.length ? ` No s'han pogut llegir: ${failed.join(", ")} (vegeu el full «Resum»).` : ""));
-    } catch (e) { setError(errorText(e)); }
-    setBusy("");
-  }
-
-  return (
-    <Panel title="Còpia de seguretat en Excel" icon={Download}>
-      {error && <Notice kind="error">{error}</Notice>}
-      {ok && <Notice kind="ok">{ok}</Notice>}
-      <p className="hint">Descarrega totes les dades del programa en un sol fitxer Excel: un full per taula (clients, finques, impostos, claus, alertes, incidències, revisions…) i un full «Resum» amb el nombre de files de cadascuna. Només llegeix: no canvia res de la base de dades. Les fotos no s'hi inclouen.</p>
-      {isAdmin
-        ? <div className="tab-actions inline"><button className="save-btn" disabled={!!busy} onClick={run}><Download size={16} /> {busy || "Descarregar còpia (.xlsx)"}</button></div>
-        : <p className="hint">Només els administradors poden descarregar la còpia de seguretat.</p>}
-    </Panel>
   );
 }

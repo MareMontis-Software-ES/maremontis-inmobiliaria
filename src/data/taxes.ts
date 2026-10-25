@@ -13,10 +13,10 @@ export interface TaxLine {
 }
 
 export async function listTaxYear(year: number): Promise<TaxLine[]> {
-  const { data, error } = await supabase.from("properties")
+  const { data, error } = await supabase.from("admi_properties")
     .select(`id, admin_number, street_type, address, zone, status, baixa_date, ${CONTRACT_SELECT},
-             property_taxes(id, tax_year, cadastral_ref, cadastral_value, revaluation_pct, ibi_quota, tax_rate, taxable_base, rent_quota, paid, paid_date),
-             property_owners(ownership_percentage, is_main, clients(first_name, last_name, dni, nie, resident), client_related_persons(first_name, last_name, dni, nie))`)
+             property_taxes:admi_property_taxes(id, tax_year, cadastral_ref, cadastral_value, revaluation_pct, ibi_quota, tax_rate, taxable_base, rent_quota, paid, paid_date),
+             property_owners:admi_property_owners(ownership_percentage, is_main, clients:admi_clients(first_name, last_name, dni, nie, resident), client_related_persons:admi_client_related_persons(first_name, last_name, dni, nie))`)
     .order("admin_number");
   if (error) throw error;
   return (data || [])
@@ -41,7 +41,7 @@ export async function listTaxYear(year: number): Promise<TaxLine[]> {
 }
 
 export async function setPaid(taxId: string, paid: boolean, date: string | null) {
-  const { error } = await supabase.from("property_taxes").update({ paid, paid_date: paid ? date : null }).eq("id", taxId);
+  const { error } = await supabase.from("admi_property_taxes").update({ paid, paid_date: paid ? date : null }).eq("id", taxId);
   if (error) throw error;
 }
 
@@ -79,7 +79,7 @@ export async function importIbi(csv: string, year: number): Promise<{ updated: n
   const num = (v: string) => Number((v || "0").replace(/\./g, "").replace(",", ".")) || 0;
   const numSmart = (v: string) => (/,\d{1,2}$/.test(v) ? num(v) : Number(v) || 0);
 
-  const { data: known, error } = await supabase.from("property_taxes").select("property_id, cadastral_ref, tax_year, revaluation_pct, tax_rate, holder_name").not("cadastral_ref", "is", null);
+  const { data: known, error } = await supabase.from("admi_property_taxes").select("property_id, cadastral_ref, tax_year, revaluation_pct, tax_rate, holder_name").not("cadastral_ref", "is", null);
   if (error) throw error;
   const byRef = new Map<string, Row>();
   for (const k of (known || []) as Row[]) { const r = String(k.cadastral_ref).trim().toUpperCase(); if (!byRef.has(r) || k.tax_year > byRef.get(r)!.tax_year) byRef.set(r, k); }
@@ -93,9 +93,9 @@ export async function importIbi(csv: string, year: number): Promise<{ updated: n
     if (!k) { notFound.push(ref); continue; }
     const row = { property_id: k.property_id, tax_year: y, cadastral_ref: ref, cadastral_value: numSmart(c[iVal]), ibi_quota: iQuota >= 0 ? numSmart(c[iQuota]) : 0,
       revaluation_pct: k.revaluation_pct ?? 2, tax_rate: k.tax_rate ?? 19, holder_name: k.holder_name };
-    const { data: ex } = await supabase.from("property_taxes").select("id").eq("property_id", k.property_id).eq("tax_year", y).maybeSingle();
-    const res = ex ? await supabase.from("property_taxes").update({ cadastral_value: row.cadastral_value, ibi_quota: row.ibi_quota, cadastral_ref: ref }).eq("id", ex.id)
-                   : await supabase.from("property_taxes").insert(row);
+    const { data: ex } = await supabase.from("admi_property_taxes").select("id").eq("property_id", k.property_id).eq("tax_year", y).maybeSingle();
+    const res = ex ? await supabase.from("admi_property_taxes").update({ cadastral_value: row.cadastral_value, ibi_quota: row.ibi_quota, cadastral_ref: ref }).eq("id", ex.id)
+                   : await supabase.from("admi_property_taxes").insert(row);
     if (res.error) throw res.error;
     ex ? updated++ : created++;
   }

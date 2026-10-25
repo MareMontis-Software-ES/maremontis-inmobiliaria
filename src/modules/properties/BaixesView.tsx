@@ -6,6 +6,7 @@ import { ArchiveRestore, ChevronLeft, ChevronRight, Contact, Euro, Home, Landmar
 import { Empty, Info2, Notice, Panel } from "../../components/ui";
 import { FieldGrid } from "../../components/FieldGrid";
 import { SearchSelect } from "../../components/SearchSelect";
+import { ExportButtons } from "../../components/ExportButtons";
 import { errorText } from "../../lib/supabase";
 import { accountCode, fmtDate } from "../../lib/format";
 import { baixaGroups, getBaixaFitxa, listBaixes, recoverProperty, type BaixaFitxa, type BaixaRow } from "../../data/baixes";
@@ -42,6 +43,12 @@ export function BaixesView({ canWrite, onOpenProperty }: { canWrite: boolean; on
           <label>Codi<input className="filter-input" placeholder="Codi client" value={f.code} onChange={e => setF({ ...f, code: e.target.value })} /></label>
           <label>Cognoms<input className="filter-input" placeholder="Cognoms o nom" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></label>
           <label>Immoble<input className="filter-input" placeholder="Adreça o núm. adm." value={f.property} onChange={e => setF({ ...f, property: e.target.value })} /></label>
+        </div>
+        <div className="head-actions">
+          <ExportButtons disabled={!list.length} table={() => ({ fileName: "historic-baixes", title: "Històric de baixes",
+            subtitle: [f.code && `Codi «${f.code}»`, f.name && `Nom «${f.name}»`, f.property && `Immoble «${f.property}»`].filter(Boolean).join(" · ") || "Totes les finques donades de baixa",
+            head: ["Codi", "Nom", "Cognoms", "Immoble", "Zona", "Núm. adm.", "Data baixa", "Usuari"],
+            rows: list.map(r => [accountCode(r.client_code), r.first_name, r.last_name, r.address, r.zone, r.admin_number, fmtDate(r.baixa_date), r.baixa_by]) })} />
         </div>
       </div>
       <section className="data-panel client-results">

@@ -87,7 +87,7 @@ export interface CaseRow {
 }
 
 export async function listCases(): Promise<CaseRow[]> {
-  const { data, error } = await supabase.from("cases_overview").select("*").eq("status", "active").order("address");
+  const { data, error } = await supabase.from("admi_revisions_overview").select("*").eq("status", "active").order("address");
   if (error) throw error;
   return (data || []).map((c: Row) => {
     const row: CaseRow = {
@@ -105,7 +105,7 @@ export async function listCases(): Promise<CaseRow[]> {
 }
 
 export async function getCase(propertyId: string): Promise<CaseRow | null> {
-  const { data, error } = await supabase.from("cases_overview").select("*").eq("id", propertyId).maybeSingle();
+  const { data, error } = await supabase.from("admi_revisions_overview").select("*").eq("id", propertyId).maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const c = data as Row;
@@ -165,7 +165,7 @@ export const EQ_LABEL: Record<EqField, string> = {
 export type Equip = Record<string, { enabled: boolean; automatic: boolean; [k: string]: any }>;
 
 export async function getEquipment(propertyId: string, area: "exterior" | "interior"): Promise<{ eq: Equip; notes: string }> {
-  const { data, error } = await supabase.from("property_equipment").select("*").eq("property_id", propertyId).eq("area", area);
+  const { data, error } = await supabase.from("admi_property_equipment").select("*").eq("property_id", propertyId).eq("area", area);
   if (error) throw error;
   const eq: Equip = {};
   let notes = "";
@@ -189,7 +189,7 @@ export async function saveEquipment(propertyId: string, area: "exterior" | "inte
   });
   rows.push({ property_id: propertyId, area, item: "OBSERVACIONS", enabled: false, automatic: false, company: null, contact: null, meter_ref: null,
     industrial_id: null, phone: null, activated: null, deactivated: null, kind: null, brand: null, number: null, notes: notes || null });
-  const { error } = await supabase.from("property_equipment").upsert(rows, { onConflict: "property_id,area,item" });
+  const { error } = await supabase.from("admi_property_equipment").upsert(rows, { onConflict: "property_id,area,item" });
   if (error) throw error;
 }
 
@@ -220,6 +220,20 @@ export const REV_ESTAT: RevItemDef[] = [
 ];
 export interface RevItem { key: string; dins?: boolean; fora?: boolean; state?: "bon" | "mal" | ""; notes: string; notify: boolean; extra?: string | boolean }
 
+/** Instal·lacions amb OFF/ON que també es marquen Bé / Mal. L'estat va a `items` amb aquestes claus;
+ *  les observacions i l'«avisar» de l'alarma i la calefacció són columnes pròpies de la revisió. */
+export const REV_INSTAL: { key: "water" | "power" | "gas" | "alarm" | "heating"; label: string }[] = [
+  { key: "water", label: "Aigua" }, { key: "power", label: "Llum" }, { key: "gas", label: "Gas" },
+  { key: "alarm", label: "Alarma" }, { key: "heating", label: "Calefacció / A.C." },
+];
+const ALL_KEYS = [...REV_INSTAL.map(d => d.key), ...REV_DINSFORA.map(d => d.key), ...REV_ESTAT.map(d => d.key)];
+
+/** Quants elements de la revisió ja s'han marcat Bé o Mal (per saber si el revisor s'ha deixat res) */
+export function revisionProgress(r: Revision): { done: number; total: number } {
+  const done = ALL_KEYS.filter(k => { const it = r.items.find(i => i.key === k); return !!it && (!!it.state || !!it.dins || !!it.fora); }).length;
+  return { done, total: ALL_KEYS.length };
+}
+
 export interface Revision {
   id?: string; property_id: string; revision_date: string; revision_number: string; is_extra: boolean; responsible_id: string;
   water_on: boolean; water_reading: string; water_meter: string; water_prev?: string;
@@ -233,7 +247,7 @@ export interface Revision {
 }
 
 export async function listRevisions(propertyId: string): Promise<Revision[]> {
-  const { data, error } = await supabase.from("revisions").select("*").eq("property_id", propertyId)
+  const { data, error } = await supabase.from("admi_property_revisions").select("*").eq("property_id", propertyId)
     .order("revision_date", { ascending: false }).order("revision_number", { ascending: false });
   if (error) throw error;
   return (data || []).map(toRevision);
@@ -254,7 +268,7 @@ function toRevision(r: Row): Revision {
 
 /** Revisió nova: la lectura anterior i els comptadors s'agafen de l'última revisió (PDF pàg. 14) */
 export function newRevision(propertyId: string, previous: Revision | undefined, meters: { water: string; power: string; gas: string }, userId: string, seasonCount: number): Revision {
-  const items: RevItem[] = [...REV_DINSFORA, ...REV_ESTAT].map(d => ({ key: d.key, state: "", dins: false, fora: false, notes: "", notify: false }));
+  const items: RevItem[] = ALL_KEYS.map(key => ({ key, state: "", dins: false, fora: false, notes: "", notify: false }));
   return {
     property_id: propertyId, revision_date: todayISO(), revision_number: String(seasonCount + 1), is_extra: false, responsible_id: userId,
     water_on: previous?.water_on ?? false, water_reading: "", water_meter: previous?.water_meter || meters.water, water_prev: previous?.water_reading || "",
@@ -277,17 +291,17 @@ export async function saveRevision(r: Revision): Promise<string> {
     items: r.items, other_observations: r.other_observations || null,
   };
   if (r.id) {
-    const { error } = await supabase.from("revisions").update(row).eq("id", r.id);
+    const { error } = await supabase.from("admi_property_revisions").update(row).eq("id", r.id);
     if (error) throw error;
     return r.id;
   }
-  const { data, error } = await supabase.from("revisions").insert(row).select("id").single();
+  const { data, error } = await supabase.from("admi_property_revisions").insert(row).select("id").single();
   if (error) throw error;
   return data.id;
 }
 
 export async function markRevisionMail(id: string, who: "responsible" | "owner") {
-  const { error } = await supabase.from("revisions").update(who === "responsible" ? { email_sent_responsible_at: new Date().toISOString() } : { email_sent_owner_at: new Date().toISOString() }).eq("id", id);
+  const { error } = await supabase.from("admi_property_revisions").update(who === "responsible" ? { email_sent_responsible_at: new Date().toISOString() } : { email_sent_owner_at: new Date().toISOString() }).eq("id", id);
   if (error) throw error;
 }
 
@@ -297,16 +311,23 @@ export function revisionIssues(r: Revision, lang: MailLang = "ca"): string[] {
   const W = (k: keyof typeof WORD_I18N) => WORD_I18N[k][lang];
   const name = (key: string, ca: string) => (lang === "ca" ? ca : ITEM_I18N[key]?.[lang] || ca);
   const out: string[] = [];
-  if (r.alarm_notify || (r.alarm_notes && !r.alarm_on)) out.push(`${name("alarm", "Alarma")} (${r.alarm_on ? "ON" : "OFF"}): ${r.alarm_notes}`.trim());
-  if (r.heating_notify) out.push(`${name("heating", "Calefacció / A.C.")} (${r.heating_on ? "ON" : "OFF"}): ${r.heating_notes}`.trim());
+  const it = (k: string) => r.items.find(x => x.key === k);
+  for (const k of ["water", "power", "gas"] as const) {
+    const i = it(k);
+    if (i && (i.state === "mal" || i.notify)) out.push(`${name(k, REV_INSTAL.find(d => d.key === k)!.label)} (${r[`${k}_on`] ? "ON" : "OFF"})${i.state === "mal" ? ` (${W("bad")})` : ""}${i.notes ? ": " + i.notes : ""}`);
+  }
+  const alarmBad = it("alarm")?.state === "mal", heatingBad = it("heating")?.state === "mal";
+  if (r.alarm_notify || alarmBad || (r.alarm_notes && !r.alarm_on)) out.push(`${name("alarm", "Alarma")} (${r.alarm_on ? "ON" : "OFF"})${alarmBad ? ` (${W("bad")})` : ""}${r.alarm_notes ? ": " + r.alarm_notes : ""}`);
+  if (r.heating_notify || heatingBad) out.push(`${name("heating", "Calefacció / A.C.")} (${r.heating_on ? "ON" : "OFF"})${heatingBad ? ` (${W("bad")})` : ""}${r.heating_notes ? ": " + r.heating_notes : ""}`);
   for (const d of [...REV_DINSFORA, ...REV_ESTAT]) {
-    const it = r.items.find(x => x.key === d.key);
-    if (!it) continue;
-    const bad = it.state === "mal" || it.dins || it.fora;
-    const extra = d.extra === "encarregar" && it.extra ? ` — ${W("order")}` : d.extra === "falta_sal" && it.extra ? ` — ${W("salt")}` : d.extra === "caducitat" && it.extra ? ` — ${W("expires")} ${it.extra}` : "";
-    if (bad || it.notify || extra) {
-      const where = d.kind === "dinsfora" ? [it.dins && W("inside"), it.fora && W("outside")].filter(Boolean).join(` ${W("and")} `) : it.state === "mal" ? W("bad") : "";
-      out.push(`${name(d.key, d.label)}${where ? ` (${where})` : ""}${extra}${it.notes ? ": " + it.notes : ""}`);
+    const i = it(d.key);
+    if (!i) continue;
+    const bad = i.state === "mal" || i.dins || i.fora;
+    const extra = d.extra === "encarregar" && i.extra ? ` — ${W("order")}` : d.extra === "falta_sal" && i.extra ? ` — ${W("salt")}` : d.extra === "caducitat" && i.extra ? ` — ${W("expires")} ${i.extra}` : "";
+    if (bad || i.notify || extra) {
+      const inOut = [i.dins && W("inside"), i.fora && W("outside")].filter(Boolean).join(` ${W("and")} `);
+      const where = d.kind === "dinsfora" && inOut ? inOut : i.state === "mal" ? W("bad") : "";
+      out.push(`${name(d.key, d.label)}${where ? ` (${where})` : ""}${extra}${i.notes ? ": " + i.notes : ""}`);
     }
   }
   return out;
@@ -322,9 +343,9 @@ export function readingsText(r: Revision): string[] {
 
 export async function mailContext(propertyId: string, clientId: string | null, responsibleId: string, language: string) {
   const [resp, client, tpl] = await Promise.all([
-    responsibleId ? supabase.from("profiles").select("full_name, email").eq("id", responsibleId).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    clientId ? supabase.from("client_emails").select("email, is_primary, sort_order").eq("client_id", clientId).order("sort_order") : Promise.resolve({ data: [], error: null }),
-    supabase.from("email_templates").select("*").in("language", [language || "en", "en"]),
+    responsibleId ? supabase.from("admi_users").select("full_name, email").eq("id", responsibleId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    clientId ? supabase.from("admi_client_emails").select("email, is_primary, sort_order").eq("client_id", clientId).order("sort_order") : Promise.resolve({ data: [], error: null }),
+    supabase.from("admi_email_templates").select("*").in("language", [language || "en", "en"]),
   ]);
   const templates = ((tpl as any).data || []) as Row[];
   const pick = (kind: string) => templates.find(t => t.kind === kind && t.language === language) || templates.find(t => t.kind === kind && t.language === "en") || null;
@@ -343,7 +364,7 @@ export async function mailContext(propertyId: string, clientId: string | null, r
 export interface Photo { id: string; revision_id: string | null; storage_path: string; description: string; url?: string; created_at: string }
 
 export async function listPhotos(propertyId: string, revisionId: string | null): Promise<Photo[]> {
-  let q = supabase.from("property_photos").select("*").eq("property_id", propertyId).order("created_at");
+  let q = supabase.from("admi_property_photos").select("*").eq("property_id", propertyId).order("created_at");
   q = revisionId ? q.eq("revision_id", revisionId) : q.is("revision_id", null);
   const { data, error } = await q;
   if (error) throw error;
@@ -359,17 +380,17 @@ export async function uploadPhoto(propertyId: string, revisionId: string | null,
   const path = `${propertyId}/${revisionId || "inventari"}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
   const up = await supabase.storage.from("fotos").upload(path, file, { contentType: file.type || "image/jpeg" });
   if (up.error) throw up.error;
-  const { error } = await supabase.from("property_photos").insert({ property_id: propertyId, revision_id: revisionId, storage_path: path, description: description || original.name });
+  const { error } = await supabase.from("admi_property_photos").insert({ property_id: propertyId, revision_id: revisionId, storage_path: path, description: description || original.name });
   if (error) throw error;
 }
 
 export async function renamePhoto(id: string, description: string) {
-  const { error } = await supabase.from("property_photos").update({ description }).eq("id", id);
+  const { error } = await supabase.from("admi_property_photos").update({ description }).eq("id", id);
   if (error) throw error;
 }
 
 export async function deletePhoto(p: Photo) {
   await supabase.storage.from("fotos").remove([p.storage_path]);
-  const { error } = await supabase.from("property_photos").delete().eq("id", p.id);
+  const { error } = await supabase.from("admi_property_photos").delete().eq("id", p.id);
   if (error) throw error;
 }

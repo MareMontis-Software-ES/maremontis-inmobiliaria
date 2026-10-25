@@ -2,12 +2,13 @@
 // llistat del Model 210 i importació de fitxers d'IBI.
 // Equival a «RENDA / Opcions Patrimonis» del programa antic (PDF pàg. 10).
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileText, Landmark, Upload } from "lucide-react";
+import { FileText, Landmark, Upload } from "lucide-react";
 import { Empty, Notice, Panel } from "../../components/ui";
+import { ExportButtons } from "../../components/ExportButtons";
 import { errorText } from "../../lib/supabase";
 import { fmtDate, todayISO } from "../../lib/format";
 import { importIbi, listTaxYear, model210, setPaid, type TaxLine } from "../../data/taxes";
-import { downloadText, toCsv } from "../../data/global";
+import { getWorkingYear } from "../../data/settings";
 
 const eur = (n: number) => n.toLocaleString("ca-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -21,6 +22,7 @@ export function TaxesPage({ canWrite, onOpenProperty }: { canWrite: boolean; onO
   const [error, setError] = useState(""); const [ok, setOk] = useState("");
   const file = useRef<HTMLInputElement>(null);
 
+  useEffect(() => { getWorkingYear().then(setYear).catch(() => {}); }, []); // per defecte, l'any de treball de Configuració
   const load = () => { setRows(null); return listTaxYear(year).then(setRows).catch(e => setError(errorText(e))); };
   useEffect(() => { void load(); }, [year]);
 
@@ -32,6 +34,8 @@ export function TaxesPage({ canWrite, onOpenProperty }: { canWrite: boolean; onO
   });
   const tot = list.reduce((a, r) => ({ cad: a.cad + r.cadastral_value, ibi: a.ibi + r.ibi_quota, base: a.base + r.taxable_base, quota: a.quota + r.rent_quota }), { cad: 0, ibi: 0, base: 0, quota: 0 });
   const m210 = list.filter(r => r.tax_id).flatMap(r => model210(r).map(o => ({ r, o })));
+  const taxFilters = [zone ? `Zona ${zone}` : "Totes les zones", paid === "true" ? "Pagats" : paid === "false" ? "Pendents" : paid === "sense" ? "Sense dades de l'any" : "",
+    from || to ? `Cognoms ${from || "…"} – ${to || "…"}` : ""].filter(Boolean).join(" · ");
 
   async function togglePaid(r: TaxLine) {
     if (!r.tax_id) return;
@@ -67,10 +71,12 @@ export function TaxesPage({ canWrite, onOpenProperty }: { canWrite: boolean; onO
           <input className="filter-input small" placeholder="Cognom inicial" value={from} onChange={e => setFrom(e.target.value)} />
           <input className="filter-input small" placeholder="Cognom final" value={to} onChange={e => setTo(e.target.value)} />
           {tab === "exercici"
-            ? <button className="cancel-btn" disabled={!list.length} onClick={() => downloadText(`impostos-${year}.csv`, toCsv(["Núm. adm.", "Finca", "Titular", "NIF", "Ref. cadastral", "Valor cadastral", "% revalorització", "Base imposable", "Tipus %", "Quota renda", "Quota IBI", "Pagat", "Data pagament", "Estat"],
-                list.map(r => [r.admin_number, r.finca, r.owners[0]?.name, r.owners[0]?.nif, r.cadastral_ref, eur(r.cadastral_value), r.revaluation_pct, eur(r.taxable_base), r.tax_rate, eur(r.rent_quota), eur(r.ibi_quota), r.paid ? "S" : "N", fmtDate(r.paid_date), r.status === "baixa" ? "Baixa " + fmtDate(r.baixa_date) : "Activa"])), "text/csv")}><Download size={16} /> Excel (CSV)</button>
-            : <button className="cancel-btn" disabled={!m210.length} onClick={() => downloadText(`model210-${year}.csv`, toCsv(["Núm. adm.", "Finca", "Titular", "NIF/NIE", "% propietat", "Total propietaris", "Base imposable", "Quota renda finca", "Tipus %", "Quota a pagar (fórmula actual)", "Quota per % propietat"],
-                m210.map(({ r, o }) => [r.admin_number, r.finca, o.name, o.nif, o.pct, o.total, eur(r.taxable_base), eur(r.rent_quota), r.tax_rate, eur(o.quota_pdf), eur(o.quota_pct)])), "text/csv")}><Download size={16} /> Excel (CSV)</button>}
+            ? <ExportButtons disabled={!list.length} table={() => ({ fileName: `impostos-${year}`, title: `Impostos de l'exercici ${year}`, subtitle: taxFilters,
+                head: ["Núm. adm.", "Finca", "Titular", "NIF", "Ref. cadastral", "Valor cadastral", "% revalorització", "Base imposable", "Tipus %", "Quota renda", "Quota IBI", "Pagat", "Data pagament", "Estat"],
+                rows: list.map(r => [r.admin_number, r.finca, r.owners[0]?.name, r.owners[0]?.nif, r.cadastral_ref, eur(r.cadastral_value), r.revaluation_pct, eur(r.taxable_base), r.tax_rate, eur(r.rent_quota), eur(r.ibi_quota), r.paid ? "S" : "N", fmtDate(r.paid_date), r.status === "baixa" ? "Baixa " + fmtDate(r.baixa_date) : "Activa"]) })} />
+            : <ExportButtons disabled={!m210.length} table={() => ({ fileName: `model210-${year}`, title: `Llistat Model 210 · ${year}`, subtitle: taxFilters,
+                head: ["Núm. adm.", "Finca", "Titular", "NIF/NIE", "% propietat", "Total propietaris", "Base imposable", "Quota renda finca", "Tipus %", "Quota a pagar (fórmula actual)", "Quota per % propietat"],
+                rows: m210.map(({ r, o }) => [r.admin_number, r.finca, o.name, o.nif, o.pct, o.total, eur(r.taxable_base), eur(r.rent_quota), r.tax_rate, eur(o.quota_pdf), eur(o.quota_pct)]) })} />}
         </div>
       )}
 

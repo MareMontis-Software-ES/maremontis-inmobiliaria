@@ -284,34 +284,48 @@
 .dirty-dot{width:8px;height:8px;border-radius:50%;background:#c28b38;flex:0 0 auto}
 .clients-tabs-host .list-view{padding-top:16px}
 
-/* --- Estadístiques --- */
+/* --- Estadístiques i llistats a mida --- */
 .stats-page{padding-bottom:24px}
-.stats-heading{font-size:15px;color:#174c40;margin:6px 0 12px}
-.stats-year-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px}
-.stats-year-bar label{display:flex;align-items:center;gap:8px;font-size:12px;color:#384a40}
-.stats-year-bar select{height:32px;border:1px solid #ddd5c4;border-radius:4px;background:#faf7f0;padding:0 8px;font:inherit;font-size:12px}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
-.stat-figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin-bottom:6px}
-.stat-figure{display:flex;flex-direction:column;gap:2px}
-.stat-figure strong{font-size:24px;color:#152f27;font-variant-numeric:tabular-nums}
-.stat-figure span{font-size:11px;color:#384a40}
-.stat-figure small{font-size:10px;color:#7d8178}
-.bar-list{display:grid;gap:6px}
-.bar-row{display:grid;grid-template-columns:minmax(80px,38%) minmax(0,1fr) 36px;align-items:center;gap:8px;font-size:11px;color:#384a40}
-.bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.report-layout{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:12px;align-items:start}
+.report-config{display:grid;gap:12px;min-width:0}
+.report-config select,.report-config input:not([type=checkbox]){width:100%;min-width:0;height:30px;border:1px solid #ddd5c4;border-radius:4px;background:#faf7f0;padding:0 8px;font:inherit;font-size:12px}
+.seg{display:flex;border:1px solid #d8d0c0;border-radius:6px;overflow:hidden;margin-bottom:8px}
+.seg:last-child{margin-bottom:0}
+.seg button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-left:1px solid #d8d0c0;background:#fffdf7;padding:7px 6px;font:inherit;font-size:12px;color:#1d2f28;cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button.on{background:#174c40;color:#fff;font-weight:600}
+.report-filter{display:grid;gap:5px;padding:8px 0;border-top:1px dashed #e0d8c8}
+.report-filter-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto;gap:5px;align-items:center}
+.report-field .report-filter-row{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.icon-only{border:0;background:transparent;color:#b0391f;padding:4px;display:grid;place-items:center;cursor:pointer}
+.report-field,.report-inline{display:grid;gap:4px;font-size:11px;color:#384a40;margin-bottom:9px}
+.report-inline{margin:10px 0 0}
+.report-cols{max-height:380px;overflow:auto;border:1px solid #eee7d9;border-radius:5px}
+.report-cols details{border-bottom:1px solid #eee7d9}
+.report-cols details:last-child{border-bottom:0}
+.report-cols summary{padding:7px 9px;font-size:12px;font-weight:600;color:#174c40;cursor:pointer;display:flex;align-items:center;gap:6px}
+.report-cols summary em{font-style:normal;background:#174c40;color:#fff;border-radius:9px;padding:0 6px;font-size:10px}
+.check-line{display:flex;align-items:center;gap:7px;padding:3px 10px 3px 22px;font-size:12px;color:#1d2f28;cursor:pointer}
+.check-line:hover{background:#f6f2e8}
+.report-result{min-width:0}
+.report-count{margin-left:auto;font-size:11px;color:#5d685f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%}
+.report-table{width:100%;border-collapse:collapse}
+.report-table th{background:#f0ede5;padding:7px 9px;font-size:11px;text-align:left;white-space:nowrap;position:sticky;top:0}
+.report-table td{padding:6px 9px;border-top:1px solid #eee7d9;font-size:12px}
+.report-table td.num,.report-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.report-table td.muted strong{color:#8a8f88;font-weight:400;font-style:italic}
+.report-table tfoot td{border-top:2px solid #d8cfbd;font-weight:700;background:#f8f4e9}
+.report-table .bar-cell{width:38%;min-width:120px}
 .bar-track{height:12px;display:block}
 .bar-track i{display:block;height:100%;min-width:2px;background:#2f6f5e;border-radius:0 4px 4px 0}
-.bar-row:hover .bar-track i{background:#174c40}
-.bar-row strong{text-align:right;color:#152f27;font-variant-numeric:tabular-nums}
-.month-bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;height:120px;margin:10px 0}
-.month-bars>div{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
-.month-bars small{font-size:10px;color:#384a40;height:12px;font-variant-numeric:tabular-nums}
-.month-bars span{flex:1;width:70%;display:flex;align-items:flex-end;border-bottom:1px solid #d8cfbd}
-.month-bars i{display:block;width:100%;background:#2f6f5e;border-radius:4px 4px 0 0}
-.month-bars>div:hover i{background:#174c40}
-.month-bars em{font-style:normal;font-size:10px;color:#7d8178}
-.stats-table td{padding:8px 10px;white-space:normal}
-.stats-table th{padding:8px 10px}
+.report-table tr:hover .bar-track i{background:#174c40}
+.saved-reports>span:first-child{font-size:12px;color:#5d685f}
+.saved-chip{display:inline-flex;border:1px solid #d8d0c0;border-radius:15px;background:#fffdf7;overflow:hidden}
+.saved-chip button{border:0;background:transparent;padding:5px 10px;font:inherit;font-size:12px;color:#1d2f28;cursor:pointer}
+.saved-chip button+button{padding:5px 8px 5px 2px;color:#8a8f88}
+.saved-chip button:hover{background:#efe9dc}
+.export-error{color:#b0391f;font-size:11px}
+@media(max-width:900px){.report-layout{grid-template-columns:1fr}.report-count{display:none}}
 
 /* --- Revisió: botons tàctils (Bon/Mal, Dins/Fora, Avisar) i fotos amb la càmera --- */
 .chip-btn{min-width:46px;height:26px;padding:0 10px;border:1px solid #cfc7b6;border-radius:13px;background:#f7f3ea;color:#4d5a52;font-size:11px;font-weight:700;white-space:nowrap}
@@ -326,12 +340,28 @@
 .pending-photos{margin-top:12px;border:1px dashed #c9c0ad;border-radius:6px;padding:10px;display:grid;gap:8px}
 .pending-photos>strong{display:flex;align-items:center;gap:6px;color:#103e33}
 .pending-photos .photo-add{margin-bottom:0}
+.rev-table tr.rev-todo th{box-shadow:inset 3px 0 #e2b45c}
+.rev-dinsfora{display:inline-flex;gap:4px}
+.item-photo{display:inline-flex;gap:4px;align-items:center}
+.ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:26px;padding:0 8px;border:1px solid #cfc7b6;border-radius:13px;background:#f7f3ea;color:#174c40;font-size:11px;font-weight:700}
+.ph-btn span{display:none}
+.ph-count{min-width:22px;height:22px;border-radius:11px;background:#174c40;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 6px}
+.rev-progress{margin-right:auto;align-self:center;font-size:12px;color:#2f8a4f;font-weight:700}
+.rev-progress.todo{color:#a8641a}
 
 @media(max-width:760px){
   .case-head{padding:12px}
   .case-head dl{grid-template-columns:1fr 1fr}
   .plan-row small{display:block;width:100%}
   .sub-tabs{overflow-x:auto}
+  .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .photo-grid figcaption input{font-size:14px}
+  .note-actions .outline-btn{width:100%;justify-content:center;padding:12px;font-size:14px}
+  .cases-table th:nth-child(n+3):nth-child(-n+6),.cases-table td:nth-child(n+3):nth-child(-n+6){display:none}
+}
+
+/* Revisió a la tauleta i al mòbil: targetes amb botons grans */
+@media(max-width:1100px){
   .h3-actions .add-small,.rev-form .data-panel-title .add-small{padding:9px 12px;font-size:13px}
   .rev-form .data-panel-title{height:auto;min-height:44px;flex-wrap:wrap;padding:6px 10px}
   .rev-form .data-panel-body{padding:10px}
@@ -373,11 +403,32 @@
   .photo-btns{width:100%}
   .photo-btns button{min-width:0}
   .photo-btns button{flex:1;height:52px;font-size:16px}
-  .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .photo-grid figcaption input{font-size:14px}
-  .note-actions .outline-btn{width:100%;justify-content:center;padding:12px;font-size:14px}
-  .cases-table th:nth-child(n+3):nth-child(-n+6),.cases-table td:nth-child(n+3):nth-child(-n+6){display:none}
+  .rev-table tr.rev-reading th{grid-column:1/-1}
+  .rev-table tr.rev-inst th{grid-column:span 2;align-self:center}
+  .rev-table tr.rev-inst .rev-onoff{grid-column:3;justify-self:end}
+  .rev-table .rev-photo{grid-column:1/-1;order:6}
+  .rev-table .rev-notify{order:4}
+  .rev-table tbody tr{padding-left:12px;padding-right:8px}
+  .rev-table tr.rev-todo{box-shadow:inset 4px 0 #e2b45c}
+  .item-photo{width:100%}
+  .item-photo .ph-btn{flex:1;height:46px;font-size:15px;border-radius:8px}
+  .ph-btn span{display:inline}
+  .rev-dinsfora{width:100%}
+  .rev-dinsfora .chip-btn{flex:1}
+  .rev-progress{flex-basis:100%;text-align:center}
 }
+/* Tauleta apaïsada (pantalla tàctil): la taula es manté, però amb botons per al dit */
+@media(pointer:coarse) and (min-width:1101px){
+  .chip-btn{height:40px;min-width:58px;border-radius:20px;font-size:13px}
+  .ph-btn{height:40px;padding:0 12px;border-radius:20px}
+  .toggle{height:40px;padding:0 12px 0 5px;font-size:12px;border-radius:20px}
+  .toggle span{width:28px;height:28px}
+  .rev-table td input[type=text],.rev-table td input:not([type]),.rev-table td input[type=date],.rev-table td input[type=month]{height:40px;font-size:15px}
+  .rev-head input,.rev-head select{height:40px;font-size:15px}
+  .rev-savebar button{height:48px;font-size:15px}
+}
+/* mentre es fa una revisió en una pantalla estreta, s'amaga la llista per anar per feina */
+@media(max-width:1250px){.rev-layout.editing>.data-panel:first-child{display:none}}
 
 /* --- Històric de baixes --- */
 .baixa-fitxa{display:grid;gap:12px}
@@ -425,3 +476,41 @@
 .history-list ul{margin:0;padding-left:16px;font-size:12.5px;display:grid;gap:2px}
 .history-list .h-add{color:#21573b}
 .history-list .h-del{color:#b0391f}
+
+/* --- Fitxa del client: capçalera i pestanyes fixes (només es mou el contingut) --- */
+.ficha-head{position:sticky;top:var(--open-tabs-h,40px);z-index:15;background:var(--cream);padding-top:6px;margin:0 -14px;padding-left:14px;padding-right:14px;box-shadow:0 6px 8px -8px #1a352740}
+.ficha-head .banner-fincas-list{max-height:104px}
+.ficha-head .record-tabs{background:var(--cream)}
+.record-number .account-code{font-size:12px;font-weight:400;opacity:.85;margin-left:-4px}
+/* Finques de baixa en vermell */
+.finca-chip.off{opacity:1;font-style:normal;background:#b3261e;border-color:#ffb4ab;color:#fff}
+.finca-chip.off .finca-num{background:#7d1a14}
+.finca-chip.off.on{background:#fde3e0;color:#8c1d18;border-color:#fde3e0;box-shadow:0 0 0 2px #d93025}
+.finca-context-off{background:#fdecea;border-color:#f3b8b2;color:#8c1d18}
+.txt-off{color:#b3261e}
+.client-home-chip.chip-off{border-color:#e7a29b;background:#fdecea;color:#8c1d18}
+.client-home-chip.chip-off .mini-tag{background:#b3261e;color:#fff}
+/* Llista: fila triada amb les fletxes del teclat */
+.client-list-row.row-kbd td{background:#efe6cf}
+.client-list-row.row-kbd td:first-child{box-shadow:inset 3px 0 0 #175346}
+/* Formularis més horitzontals */
+.form-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.f-wide2{grid-column:span 2}
+.client-edit{display:flex;flex-direction:column;gap:12px;min-width:0}
+.client-edit-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.client-data{display:flex;flex-direction:column;gap:12px}
+.info-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 22px}
+.path-line{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* Impostos: dues columnes de dos i observacions a baix */
+.taxes-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;margin-top:12px}
+.taxes-obs{margin-top:12px}
+.year-now{display:flex;align-items:center;gap:6px;font-size:13px;margin-right:6px}
+.year-big{font-size:15px;margin:4px 0 8px}
+.bottom-bar>div{flex-wrap:wrap}
+.danger-btn{color:#b3261e;border-color:#e7a29b;margin-left:auto}
+.danger-btn:hover{background:#fdecea}
+.role-switch{display:flex;gap:6px;margin-bottom:10px}
+.perm-table td:not(:first-child),.perm-table th:not(:first-child){text-align:center;width:90px}
+.cell-actions{display:inline-flex;gap:6px;align-items:center}
+@media(max-width:1100px){.form-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.client-edit-row,.taxes-columns{grid-template-columns:1fr}}
+@media(max-width:700px){.form-grid.four{grid-template-columns:1fr}.f-wide2{grid-column:1/-1}.ficha-head{position:static}}
