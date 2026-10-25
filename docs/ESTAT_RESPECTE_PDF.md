@@ -68,6 +68,11 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 3. **Fórmula del Model 210** → confirmar amb l'assessoria (el PDF aplica dues vegades el tipus de gravamen).
 4. **Fitxer d'IBI real** → per adaptar la importació al format oficial.
 5. **Enviament de correu sense obrir Outlook** (amb fotos adjuntes) → cal un servei de correu (p. ex. el compte SMTP de l'empresa o Resend) i una funció al servidor.
+   Ja fet per a les **felicitacions automàtiques** (aniversari del client i Nadal / Any Nou): Configuració → Felicitacions
+   (activar, dia de Nadal, hora, imatge o logo, textos per idioma, prova i registre d'enviaments) i Configuració → Correu sortint
+   (servidor SMTP de cada empresa; contrasenya xifrada al Vault). Ho envia la funció del servidor `admi-felicitacions`
+   (pg_cron + pg_net, migració `20261025000004`). Falta posar-hi les dades del correu de l'empresa i fer una prova real.
+   Les notes i els correus de revisió encara obren el programa de correu: es poden passar a aquest mateix servidor.
 6. ~~**Tipus de contracte que habiliten funcions**~~ → fet. Queda pendent quan existeixin les funcions de visites i rebuts.
 7. **Migració de les dades reals** del programa antic (DBF) → importació inicial de clients, finques, impostos, incidències i historial.
 

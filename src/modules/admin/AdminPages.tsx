@@ -1,11 +1,12 @@
 // Pantalles de manteniment: Contractes, Industrials i Configuració (usuaris, zones, textos de correu).
 // Totes segueixen el mateix patró: llista a l'esquerra, fitxa a la dreta.
 import { useEffect, useState, type ReactNode } from "react";
-import { CalendarDays, Check, Download, FileText, Languages, Mail, MapPin, Plus, Save, ShieldCheck, Trash2, Users, Wrench, X } from "lucide-react";
+import { CalendarDays, Check, Download, FileText, Gift, Languages, Mail, MapPin, Plus, Save, Server, ShieldCheck, Trash2, Users, Wrench, X } from "lucide-react";
 import { CheckInput, Empty, Notice, Panel, SelectInput, TextArea, TextInput } from "../../components/ui";
 import { errorText } from "../../lib/supabase";
 import { useLanguages } from "../../data/settings";
 import { BackupsTab, LanguagesTab, PermissionsTab, YearTab } from "./ConfigTabs";
+import { GreetingsTab, SmtpTab } from "./GreetingsTabs";
 import { CONTRACT_FLAGS, deleteContractType, deleteIndustrial, emptyContractType, emptyIndustrial, listContractTypes, listIndustrialsFull, listProfiles, listTemplates, listZones,
   saveContractType, saveIndustrial, saveProfile, saveTemplate, saveZone, TEMPLATE_KINDS, TRADES,
   type ContractType, type Industrial, type ProfileRow, type Template } from "../../data/admin";
@@ -135,20 +136,21 @@ export function IndustrialsPage({ canWrite, canDelete }: { canWrite: boolean; ca
 // =====================================================================
 // CONFIGURACIÓ: usuaris, zones, textos de correu, còpia de seguretat
 // =====================================================================
-type ConfigTab = "usuaris" | "permisos" | "any" | "idiomes" | "zones" | "textos" | "copia";
+type ConfigTab = "usuaris" | "permisos" | "any" | "idiomes" | "zones" | "textos" | "felicitacions" | "correu" | "copia";
 export function ConfigPage({ isAdmin }: { isAdmin: boolean }) {
   const [tab, setTab] = useState<ConfigTab>("usuaris");
   return (
     <div className="work-area list-view">
-      <PageHead kicker="ADMINISTRACIÓ" title="Configuració" text={isAdmin ? "Usuaris, permisos per rol, canvi d'any, idiomes, zones, textos dels correus i còpies de seguretat." : "Només els administradors poden canviar la configuració."} />
+      <PageHead kicker="ADMINISTRACIÓ" title="Configuració" text={isAdmin ? "Usuaris, permisos per rol, canvi d'any, idiomes, zones, textos dels correus, felicitacions, correu sortint i còpies de seguretat." : "Només els administradors poden canviar la configuració."} />
       <div className="record-tabs">
         {([["usuaris", "Usuaris", Users], ["permisos", "Permisos per rol", ShieldCheck], ["any", "Canvi d'any", CalendarDays], ["idiomes", "Idiomes", Languages],
-          ["zones", "Zones", MapPin], ["textos", "Textos de correu", Mail], ["copia", "Còpies de seguretat", Download]] as const).map(([id, l, I]) =>
+          ["zones", "Zones", MapPin], ["textos", "Textos de correu", Mail], ["felicitacions", "Felicitacions", Gift], ["correu", "Correu sortint", Server], ["copia", "Còpies de seguretat", Download]] as const).map(([id, l, I]) =>
           <button key={id} className={tab === id ? "selected" : ""} onClick={() => setTab(id)}><I size={17} /><span>{l}</span></button>)}
       </div>
       <div className="tab-pad">
         {tab === "usuaris" ? <UsersTab isAdmin={isAdmin} /> : tab === "permisos" ? <PermissionsTab isAdmin={isAdmin} /> : tab === "any" ? <YearTab isAdmin={isAdmin} />
-          : tab === "idiomes" ? <LanguagesTab isAdmin={isAdmin} /> : tab === "zones" ? <ZonesTab isAdmin={isAdmin} /> : tab === "textos" ? <TemplatesTab isAdmin={isAdmin} /> : <BackupsTab isAdmin={isAdmin} />}
+          : tab === "idiomes" ? <LanguagesTab isAdmin={isAdmin} /> : tab === "zones" ? <ZonesTab isAdmin={isAdmin} /> : tab === "textos" ? <TemplatesTab isAdmin={isAdmin} />
+          : tab === "felicitacions" ? <GreetingsTab isAdmin={isAdmin} onEditTexts={() => setTab("textos")} /> : tab === "correu" ? <SmtpTab isAdmin={isAdmin} /> : <BackupsTab isAdmin={isAdmin} />}
       </div>
     </div>
   );
@@ -219,7 +221,7 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
   const langName = (l: string) => languages.find(x => x[0] === l)?.[1] || l;
   return (
     <div className="master-detail">
-      <Panel title="Textos del correu al propietari, per idioma" icon={Mail}
+      <Panel title="Textos dels correus, per idioma" icon={Mail}
         action={isAdmin && <button className="add-small" onClick={() => setSel({ kind: "revisio_ok", language: "ca", subject: "Revisió casa {{finca}}", body: "", reviewed: true })}><Plus size={13} /> Nou text</button>}>
         {error && <Notice kind="error">{error}</Notice>}
         {rows.some(t => !t.reviewed) && <Notice>Hi ha {rows.filter(t => !t.reviewed).length} textos traduïts pendents de revisar. Obre'ls, corregeix el que calgui i grava'ls amb «Revisat» marcat.</Notice>}
@@ -228,7 +230,7 @@ function TemplatesTab({ isAdmin }: { isAdmin: boolean }) {
             <tbody>{rows.map(t => <tr key={t.id} className={sel?.id === t.id ? "row-sel" : ""} onClick={() => setSel({ ...t })}><td>{TEMPLATE_KINDS.find(k => k[0] === t.kind)?.[1] || t.kind}</td><td>{langName(t.language)}</td><td>{t.subject}</td>
               <td>{t.reviewed ? <span className="status-pill status-ok">Revisat</span> : <span className="status-pill status-warn">Pendent de revisar</span>}</td></tr>)}</tbody></table>
         )}
-        <p className="hint">Es pot fer servir <code>{"{{finca}}"}</code>, <code>{"{{data}}"}</code>, <code>{"{{client}}"}</code> i <code>{"{{incidencies}}"}</code> (llista d'elements en mal estat). Si un client té un idioma sense text, s'envia en anglès.</p>
+        <p className="hint">Es pot fer servir <code>{"{{finca}}"}</code>, <code>{"{{data}}"}</code>, <code>{"{{client}}"}</code> i <code>{"{{incidencies}}"}</code> (llista d'elements en mal estat). A les felicitacions: <code>{"{{nom}}"}</code>, <code>{"{{client}}"}</code> i <code>{"{{any}}"}</code>. Si un client té un idioma sense text, s'envia en anglès.</p>
       </Panel>
       {sel && (
         <Panel title={sel.id ? "Modificar text" : "Nou text"} icon={Mail}>

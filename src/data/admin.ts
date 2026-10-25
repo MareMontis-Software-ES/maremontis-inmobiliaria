@@ -86,7 +86,8 @@ export async function saveProfile(p: ProfileRow) {
 
 // ---------------- Textos de correu ----------------
 export interface Template { id?: string; kind: string; language: string; subject: string; body: string; reviewed: boolean }
-export const TEMPLATE_KINDS: [string, string][] = [["revisio_ok", "Revisió feta (al propietari)"], ["revisio_incidencies", "Revisió amb incidències (al propietari)"]];
+export const TEMPLATE_KINDS: [string, string][] = [["revisio_ok", "Revisió feta (al propietari)"], ["revisio_incidencies", "Revisió amb incidències (al propietari)"],
+  ["felicitacio_aniversari", "Felicitació d'aniversari"], ["felicitacio_nadal", "Felicitació de Nadal i Any Nou"]];
 export async function listTemplates(): Promise<Template[]> {
   const { data, error } = await supabase.from("admi_email_templates").select("*").order("kind").order("language");
   if (error) throw error;
