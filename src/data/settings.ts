@@ -64,7 +64,7 @@ export async function saveLanguage(l: Language, isNew: boolean) {
 }
 /** Treu un idioma. Si algun client el té assignat, no es deixa (es pot desactivar). */
 export async function deleteLanguage(code: string): Promise<string | null> {
-  const { count } = await supabase.from("clients").select("id", { count: "exact", head: true }).eq("language", code);
+  const { count } = await supabase.from("admi_clients").select("id", { count: "exact", head: true }).eq("language", code);
   if (count) return `No es pot treure: ${count} client${count > 1 ? "s el tenen" : " el té"} assignat. Pots desmarcar «Actiu» perquè no surti als desplegables.`;
   const { error } = await supabase.from("admi_languages").delete().eq("code", code);
   if (error) throw error;

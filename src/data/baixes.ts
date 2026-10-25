@@ -14,9 +14,9 @@ export interface BaixaRow {
 }
 
 export async function listBaixes(): Promise<BaixaRow[]> {
-  const { data, error } = await supabase.from("properties")
+  const { data, error } = await supabase.from("admi_properties")
     .select(`id, admin_number, street_type, address, zone, municipality, baixa_date, profiles:baixa_by(full_name),
-             property_owners(is_main, client_id, clients(client_code, first_name, last_name))`)
+             property_owners:admi_property_owners(is_main, client_id, clients:admi_clients(client_code, first_name, last_name))`)
     .eq("status", "baixa").order("baixa_date", { ascending: false });
   if (error) throw error;
   return (data || []).map((p: Row) => {
@@ -47,14 +47,14 @@ export interface BaixaFitxa {
 }
 
 export async function getBaixaFitxa(id: string): Promise<BaixaFitxa> {
-  const { data, error } = await supabase.from("properties")
+  const { data, error } = await supabase.from("admi_properties")
     .select(`*, profiles:baixa_by(full_name),
-             property_owners(is_main, ownership_percentage, client_id, related_person_id,
-               clients(id, client_code, first_name, last_name, language, nationality,
-                 client_phones(country_prefix, phone_number, phone_type, sort_order),
-                 client_emails(email, sort_order),
-                 client_addresses(street_type, street_name, street_number, extra, postal_code, municipality, province, country, is_primary)),
-               client_related_persons(first_name, last_name))`)
+             property_owners:admi_property_owners(is_main, ownership_percentage, client_id, related_person_id,
+               clients:admi_clients(id, client_code, first_name, last_name, language, nationality,
+                 client_phones:admi_client_phones(country_prefix, phone_number, phone_type, sort_order),
+                 client_emails:admi_client_emails(email, sort_order),
+                 client_addresses:admi_client_addresses(street_type, street_name, street_number, extra, postal_code, municipality, province, country, is_primary)),
+               client_related_persons:admi_client_related_persons(first_name, last_name))`)
     .eq("id", id).single();
   if (error) throw error;
   const form: PropertyForm = { id: data.id, status: data.status, baixa_date: s(data.baixa_date) };

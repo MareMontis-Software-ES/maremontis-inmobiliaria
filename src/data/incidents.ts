@@ -29,8 +29,8 @@ export const emptyIncident = (userId: string, clientId = "", propertyId = ""): I
 });
 
 export async function listIncidents(f: { clientId?: string; propertyId?: string } = {}): Promise<Incident[]> {
-  let q = supabase.from("incidents")
-    .select("*, clients(first_name, last_name), properties(admin_number, street_type, address), profiles:reported_by(full_name), service_notes(status)")
+  let q = supabase.from("admi_incidents")
+    .select("*, clients:admi_clients(first_name, last_name), properties:admi_properties(admin_number, street_type, address), profiles:reported_by(full_name), service_notes:admi_service_notes(status)")
     .order("incident_date", { ascending: false }).order("created_at", { ascending: false }).limit(1000);
   if (f.clientId) q = q.eq("client_id", f.clientId);
   if (f.propertyId) q = q.eq("property_id", f.propertyId);
@@ -56,23 +56,23 @@ export async function saveIncident(i: Incident): Promise<string> {
     closed_at: i.status === "tancada" ? new Date().toISOString() : null, revision_id: i.revision_id || null,
   };
   if (i.id) {
-    const { error } = await supabase.from("incidents").update(row).eq("id", i.id);
+    const { error } = await supabase.from("admi_incidents").update(row).eq("id", i.id);
     if (error) throw error;
     return i.id;
   }
-  const { data, error } = await supabase.from("incidents").insert(row).select("id").single();
+  const { data, error } = await supabase.from("admi_incidents").insert(row).select("id").single();
   if (error) throw error;
   return data.id;
 }
 
 export async function deleteIncident(id: string) {
-  const { error } = await supabase.from("incidents").delete().eq("id", id);
+  const { error } = await supabase.from("admi_incidents").delete().eq("id", id);
   if (error) throw error;
 }
 
 export async function listNotes(incidentId: string): Promise<ServiceNote[]> {
-  const { data, error } = await supabase.from("service_notes")
-    .select("*, ind:industrials!service_notes_industrial_id_fkey(name, email)")
+  const { data, error } = await supabase.from("admi_service_notes")
+    .select("*, ind:admi_tradespeople!service_notes_industrial_id_fkey(name, email)")
     .eq("incident_id", incidentId).order("note_number");
   if (error) throw error;
   return (data || []).map(toNote);
@@ -109,11 +109,11 @@ export async function saveNote(n: ServiceNote): Promise<string> {
     limit_from: n.limit_from || null, limit_to: n.limit_to || null, status: n.status,
   };
   if (n.id) {
-    const { error } = await supabase.from("service_notes").update(row).eq("id", n.id);
+    const { error } = await supabase.from("admi_service_notes").update(row).eq("id", n.id);
     if (error) throw error;
     return n.id;
   }
-  const { data, error } = await supabase.from("service_notes").insert(row).select("id").single();
+  const { data, error } = await supabase.from("admi_service_notes").insert(row).select("id").single();
   if (error) throw error;
   return data.id;
 }
@@ -123,7 +123,7 @@ export async function setNoteStatus(id: string, status: string, userId?: string,
   if (status === "enviada") Object.assign(patch, { sent_at: new Date().toISOString(), sent_to: sentTo || null, sent_by: userId || null });
   if (status === "completada") Object.assign(patch, { completed_at: new Date().toISOString(), completed_by: userId || null });
   if (status === "pendent") Object.assign(patch, { sent_at: null, sent_to: null, completed_at: null });
-  const { error } = await supabase.from("service_notes").update(patch).eq("id", id);
+  const { error } = await supabase.from("admi_service_notes").update(patch).eq("id", id);
   if (error) throw error;
 }
 

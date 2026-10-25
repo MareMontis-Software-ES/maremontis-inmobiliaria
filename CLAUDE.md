@@ -31,7 +31,7 @@ supabase/esborrar_dades_prova.sql  esborra les dades d'exemple («DADES DE PROVA
 - Interfície en **català**. Noms de taules i camps en anglès.
 - No posar mai dades inventades presentades com a reals. Les dades d'exemple porten «DADES DE PROVA» a observacions
   (o «(exemple)» al nom) i s'esborren amb `supabase/esborrar_dades_prova.sql`.
-- Seguretat: RLS activat a totes les taules; rols a `profiles.role` (`admin` / `oficina` / `consulta`).
+- Seguretat: RLS activat a totes les taules; rols a `admi_users.role` (`admin` / `oficina` / `consulta`).
   No desactivar RLS ni fer públiques les taules. Mai posar la clau `service_role` al codi.
 - Les finques i els clients **no s'esborren**: es donen de baixa (cal l'històric per al Model 210 de l'any següent).
   El núm. d'administració (= armari de claus) queda lliure en donar de baixa una finca.
@@ -51,4 +51,4 @@ supabase/esborrar_dades_prova.sql  esborra les dades d'exemple («DADES DE PROVA
 6. ~~Que el tipus de contracte amagui les funcions que no inclou~~ (fet: `contractFeatures()` a `src/data/admin.ts`; sense contracte, tot habilitat).
 7. Migració de les dades reals del programa antic.
 8. ~~Provar la pujada de fotos amb el Supabase real~~ (permisos del bucket `fotos` provats; falta una prova des d'un mòbil real).
-9. Reanomenar les taules existents amb el prefix `admi_` (les noves ja el porten) — pas a part, toca tot el programa.
+9. ~~Reanomenar les taules existents amb el prefix `admi_`~~ (fet: migració `20261025000002`; noms descriptius, p. ex. `admi_users`, `admi_change_history`, `admi_tradespeople`).

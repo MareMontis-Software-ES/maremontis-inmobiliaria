@@ -44,7 +44,7 @@ export default function App() {
     if (!session) { setProfile(null); return; }
     currentProfile(session.user.id).then(p => {
       setProfile(p);
-      setProfileError(p ? "" : "El teu usuari no té perfil a la taula «profiles». Demana a un administrador que te'l creï.");
+      setProfileError(p ? "" : "El teu usuari no té perfil a la taula «admi_users». Demana a un administrador que te'l creï.");
     }).catch(e => setProfileError(String(e?.message || e)));
   }, [session?.user.id]);
 

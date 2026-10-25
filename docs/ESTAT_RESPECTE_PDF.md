@@ -95,4 +95,4 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Idiomes | Configuració → Idiomes: afegir, treure (si cap client el té) o desactivar (`admi_languages`) | ✅ |
 | Còpies de seguretat | Automàtiques (cada dia o setmana, a l'hora triada, pg_cron) i manuals, en SQL per a l'SQL Editor, amb data i hora; es guarden les 30 últimes automàtiques (`admi_backups`, `admi_run_backup`). També en Excel | ✅ |
 | Logo | Logo MareMontis a dalt del menú | ✅ |
-| Prefix `admi_` a les taules | Les taules noves ja el porten. Reanomenar les existents queda per a un pas a part | ⏳ |
+| Prefix `admi_` a les taules | Totes les taules i vistes porten `admi_` i un nom descriptiu (p. ex. `admi_users`, `admi_change_history`, `admi_tradespeople`, `admi_property_revisions`). Migració `20261025000002`; l'esquema `old_demo` (demo antiga) esborrat | ✅ |
