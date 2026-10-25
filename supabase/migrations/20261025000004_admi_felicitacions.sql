@@ -9,10 +9,11 @@
 --      la funció del servidor «admi-felicitacions», que és la que envia els correus.
 
 -- ---------------------------------------------------------------------
--- 1. Configuració per defecte (tot desactivat fins que l'oficina ho activi)
+-- 1. Configuració per defecte (tot desactivat fins que l'oficina ho activi).
+--    images: imatge de cada felicitació per idioma, {"felicitacio_nadal": {"*": camí, "ca": camí…}} («*» = la resta d'idiomes)
 -- ---------------------------------------------------------------------
 insert into public.admi_settings (key, value)
-values ('greetings', '{"birthday_enabled": false, "christmas_enabled": false, "christmas_day": "12-20", "hour": 9, "image_path": ""}')
+values ('greetings', '{"birthday_enabled": false, "christmas_enabled": false, "christmas_day": "12-20", "hour": 9, "images": {}}')
 on conflict (key) do nothing;
 
 -- ---------------------------------------------------------------------

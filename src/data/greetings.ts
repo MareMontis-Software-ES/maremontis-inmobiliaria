@@ -18,28 +18,33 @@ async function putSetting(key: string, value: Row) {
 }
 
 // ---------------- Felicitacions ----------------
-export interface GreetingSettings { birthday_enabled: boolean; christmas_enabled: boolean; christmas_day: string; hour: number; image_path: string }
-export const defaultGreetings = (): GreetingSettings => ({ birthday_enabled: false, christmas_enabled: false, christmas_day: "12-20", hour: 9, image_path: "" });
+/** Imatge de cada felicitació per idioma: images[tipus][idioma] = camí al magatzem («*» = la resta d'idiomes) */
+export type GreetingImages = Record<string, Record<string, string>>;
+export interface GreetingSettings { birthday_enabled: boolean; christmas_enabled: boolean; christmas_day: string; hour: number; images: GreetingImages }
+export const ALL_LANGUAGES = "*";
+export const defaultGreetings = (): GreetingSettings => ({ birthday_enabled: false, christmas_enabled: false, christmas_day: "12-20", hour: 9, images: {} });
 export async function getGreetings(): Promise<GreetingSettings> {
   const v = await getSetting("greetings");
-  return { ...defaultGreetings(), ...v, hour: Number(v.hour ?? 9), image_path: s(v.image_path) };
+  return { ...defaultGreetings(), ...v, hour: Number(v.hour ?? 9), images: (v.images && typeof v.images === "object" ? v.images : {}) as GreetingImages };
 }
 export const saveGreetings = (g: GreetingSettings) => putSetting("greetings", { ...g });
 
-/** Puja la imatge (logo o foto de felicitació) i en retorna el camí al magatzem */
-export async function uploadGreetingImage(original: File): Promise<string> {
+/** Puja una imatge de felicitació i en retorna el camí al magatzem */
+export async function uploadGreetingImage(original: File, kind: string, language: string): Promise<string> {
   const file = await shrinkImage(original);
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const path = `felicitacions/${Date.now()}.${ext}`;
+  const path = `felicitacions/${kind}-${language === ALL_LANGUAGES ? "general" : language}-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("fotos").upload(path, file, { contentType: file.type || "image/jpeg" });
   if (error) throw error;
   return path;
 }
-export async function greetingImageUrl(path: string): Promise<string> {
-  if (!path) return "";
-  const { data } = await supabase.storage.from("fotos").createSignedUrl(path, 3600);
-  return data?.signedUrl || "";
+/** Enllaços temporals per veure les imatges (camí → URL) */
+export async function greetingImageUrls(paths: string[]): Promise<Record<string, string>> {
+  if (!paths.length) return {};
+  const { data } = await supabase.storage.from("fotos").createSignedUrls(paths, 3600);
+  return Object.fromEntries((data || []).map((d, i) => [paths[i], d.signedUrl || ""]));
 }
+export const removeGreetingImage = (path: string) => supabase.storage.from("fotos").remove([path]).then(() => undefined);
 
 export interface GreetingLogRow { id: string; sent_at: string; kind: string; client: string; email: string; language: string; status: string; error: string }
 export async function listGreetingLog(): Promise<GreetingLogRow[]> {

@@ -6,7 +6,7 @@ import { errorText } from "../../lib/supabase";
 import { useLanguages } from "../../data/settings";
 import { listTemplates, type Template } from "../../data/admin";
 import {
-  getGreetings, getSmtp, greetingImageUrl, GREETING_KINDS, listGreetingLog, runGreetingsNow, saveGreetings, saveSmtp, sendGreetingTest, uploadGreetingImage,
+  ALL_LANGUAGES, getGreetings, getSmtp, greetingImageUrls, GREETING_KINDS, listGreetingLog, removeGreetingImage, runGreetingsNow, saveGreetings, saveSmtp, sendGreetingTest, uploadGreetingImage,
   type GreetingLogRow, type GreetingSettings, type SmtpSettings,
 } from "../../data/greetings";
 
@@ -20,7 +20,8 @@ const STATUS: Record<string, [string, string]> = { sent: ["Enviada", "status-ok"
 // ---------------------------------------------------------------------
 export function GreetingsTab({ isAdmin, onEditTexts }: { isAdmin: boolean; onEditTexts: () => void }) {
   const [g, setG] = useState<GreetingSettings | null>(null);
-  const [img, setImg] = useState("");
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [addLang, setAddLang] = useState<Record<string, string>>({});
   const [tpls, setTpls] = useState<Template[]>([]);
   const [log, setLog] = useState<GreetingLogRow[] | null>(null);
   const [smtpOk, setSmtpOk] = useState(true);
@@ -33,7 +34,7 @@ export function GreetingsTab({ isAdmin, onEditTexts }: { isAdmin: boolean; onEdi
 
   useEffect(() => {
     if (!isAdmin) return;
-    getGreetings().then(v => { setG(v); return greetingImageUrl(v.image_path).then(setImg); }).catch(e => setError(errorText(e)));
+    getGreetings().then(v => { setG(v); return greetingImageUrls(Object.values(v.images).flatMap(m => Object.values(m))).then(setUrls); }).catch(e => setError(errorText(e)));
     listTemplates().then(r => setTpls(r.filter(t => GREETING_KINDS.some(k => k[0] === t.kind)))).catch(() => {});
     getSmtp().then(c => setSmtpOk(!!c.host && !!c.user && c.password_saved)).catch(() => {});
     void loadLog();
@@ -46,12 +47,28 @@ export function GreetingsTab({ isAdmin, onEditTexts }: { isAdmin: boolean; onEdi
   async function save(next = g!) {
     try { await saveGreetings(next); msg(undefined, "Felicitacions desades."); } catch (e) { msg(e); }
   }
-  async function pickImage(file: File | undefined) {
+  const withImage = (kind: string, language: string, path: string) => {
+    const byLang = { ...(g!.images[kind] || {}) };
+    if (path) byLang[language] = path; else delete byLang[language];
+    return { ...g!, images: { ...g!.images, [kind]: byLang } };
+  };
+  async function pickImage(kind: string, language: string, file: File | undefined) {
     if (!file) return;
-    setBusy("img");
-    try { const path = await uploadGreetingImage(file); const next = { ...g!, image_path: path }; setG(next); setImg(await greetingImageUrl(path)); await save(next); }
-    catch (e) { msg(e); }
+    setBusy(`img-${kind}-${language}`);
+    try {
+      const old = g!.images[kind]?.[language];
+      const path = await uploadGreetingImage(file, kind, language);
+      const next = withImage(kind, language, path);
+      setG(next); setUrls({ ...urls, ...(await greetingImageUrls([path])) }); await save(next);
+      if (old) await removeGreetingImage(old);
+    } catch (e) { msg(e); }
     setBusy("");
+  }
+  async function dropImage(kind: string, language: string) {
+    const old = g!.images[kind]?.[language];
+    const next = withImage(kind, language, "");
+    setG(next); await save(next);
+    if (old) await removeGreetingImage(old).catch(() => {});
   }
   async function doTest() {
     setBusy("test"); msg();
@@ -87,14 +104,40 @@ export function GreetingsTab({ isAdmin, onEditTexts }: { isAdmin: boolean; onEdi
         <p className="hint">Ho envia el servidor cada dia encara que ningú tingui el programa obert. Només a clients actius (no donats de baixa) amb e-mail; als d'aniversari, si tenen la data de naixement. Cada client rep el text en el seu idioma (si no n'hi ha, en anglès) i mai dues vegades la mateixa felicitació el mateix any.</p>
       </Panel>
 
-      <Panel title="Imatge del correu (logo o foto de felicitació)" icon={ImagePlus}>
-        {img ? <img src={img} alt="Imatge de la felicitació" style={{ maxWidth: 420, width: "100%", borderRadius: 8, display: "block", marginBottom: 12 }} /> : <p className="hint">Encara no hi ha imatge: el correu sortirà només amb el text.</p>}
-        <div className="tab-actions inline">
-          <label className="outline-btn" style={{ cursor: "pointer" }}><ImagePlus size={15} /> {busy === "img" ? "Pujant…" : img ? "Canviar imatge" : "Pujar imatge"}
-            <input type="file" accept="image/*" hidden onChange={e => { void pickImage(e.target.files?.[0]); e.target.value = ""; }} /></label>
-          {img && <button className="cancel-btn danger-btn" onClick={() => { const next = { ...g, image_path: "" }; setG(next); setImg(""); void save(next); }}><Trash2 size={15} /> Treure imatge</button>}
-        </div>
-        <p className="hint">Surt a dalt de tot del correu, a tota l'amplada. Va bé una imatge apaïsada (per exemple 1200 × 600).</p>
+      <Panel title="Imatges de les felicitacions" icon={ImagePlus}>
+        <p className="hint">Surt a dalt de tot del correu, a tota l'amplada (va bé una imatge apaïsada, per exemple 1200 × 675). Si la imatge porta text, se'n pot pujar una per a cada idioma: el client rep la del seu idioma i, si no n'hi ha, la general.</p>
+        {GREETING_KINDS.map(([kind, label]) => {
+          const byLang = g.images[kind] || {};
+          const rows = [ALL_LANGUAGES, ...Object.keys(byLang).filter(l => l !== ALL_LANGUAGES).sort()];
+          const free = languages.filter(([c]) => !byLang[c]);
+          return (
+            <div key={kind} className="greeting-images">
+              <h4>{label}</h4>
+              <div className="greeting-image-grid">
+                {rows.map(lang => {
+                  const path = byLang[lang]; const id = `img-${kind}-${lang}`;
+                  return (
+                    <figure key={lang} className="greeting-image">
+                      {path && urls[path] ? <img src={urls[path]} alt={`${label} (${lang === ALL_LANGUAGES ? "general" : langName(lang)})`} /> : <div className="greeting-image-empty">Sense imatge</div>}
+                      <figcaption>
+                        <strong>{lang === ALL_LANGUAGES ? "General (la resta d'idiomes)" : langName(lang)}</strong>
+                        <span className="tab-actions inline">
+                          <label className="outline-btn small" style={{ cursor: "pointer" }}><ImagePlus size={13} /> {busy === id ? "Pujant…" : path ? "Canviar" : "Pujar"}
+                            <input type="file" accept="image/*" hidden onChange={e => { void pickImage(kind, lang, e.target.files?.[0]); e.target.value = ""; }} /></label>
+                          {path && <button className="outline-btn small danger-btn" onClick={() => void dropImage(kind, lang)}><Trash2 size={13} /> Treure</button>}
+                        </span>
+                      </figcaption>
+                    </figure>);
+                })}
+              </div>
+              {!!free.length && <div className="tab-actions inline">
+                <select className="cell-input" value={addLang[kind] || ""} onChange={e => setAddLang({ ...addLang, [kind]: e.target.value })}>
+                  <option value="">Imatge per a un idioma…</option>{free.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select>
+                <label className={"add-small" + (addLang[kind] ? "" : " disabled")} style={{ cursor: addLang[kind] ? "pointer" : "default" }}><ImagePlus size={13} /> Pujar
+                  <input type="file" accept="image/*" hidden disabled={!addLang[kind]} onChange={e => { void pickImage(kind, addLang[kind], e.target.files?.[0]); e.target.value = ""; setAddLang({ ...addLang, [kind]: "" }); }} /></label>
+              </div>}
+            </div>);
+        })}
       </Panel>
 
       <Panel title="Textos per idioma" icon={Mail} action={<button className="add-small" onClick={onEditTexts}>Editar textos</button>}>

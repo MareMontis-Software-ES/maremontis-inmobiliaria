@@ -35,6 +35,8 @@ ${withImage ? `<tr><td><img src="cid:felicitacio" alt="" width="600" style="disp
 </table></td></tr></table></body></html>`;
 }
 
+type Image = { content: Uint8Array; contentType: string };
+
 async function loadContext() {
   const [{ data: cfgRow }, { data: tpls, error: tErr }] = await Promise.all([
     admin.from("admi_settings").select("value").eq("key", "greetings").maybeSingle(),
@@ -42,12 +44,19 @@ async function loadContext() {
   ]);
   if (tErr) throw tErr;
   const cfg: Row = cfgRow?.value || {};
-  let image: { content: Uint8Array; contentType: string } | null = null;
-  if (cfg.image_path) {
-    const { data } = await admin.storage.from("fotos").download(cfg.image_path);
-    if (data) image = { content: new Uint8Array(await data.arrayBuffer()), contentType: data.type || "image/jpeg" };
+  // Imatge de cada felicitació en l'idioma del client (o la general, «*»); es descarrega una sola vegada
+  const cache = new Map<string, Image | null>();
+  async function imageFor(kind: string, language: string): Promise<Image | null> {
+    const byLang: Row = cfg.images?.[kind] || {};
+    const path: string = byLang[language] || byLang["*"] || "";
+    if (!path) return null;
+    if (!cache.has(path)) {
+      const { data } = await admin.storage.from("fotos").download(path);
+      cache.set(path, data ? { content: new Uint8Array(await data.arrayBuffer()), contentType: data.type || "image/jpeg" } : null);
+    }
+    return cache.get(path) || null;
   }
-  return { cfg, templates: (tpls || []) as Row[], image };
+  return { templates: (tpls || []) as Row[], imageFor };
 }
 
 /** Text revisat en l'idioma del client; si no n'hi ha, en anglès i després en castellà */
@@ -69,8 +78,8 @@ async function transport() {
 }
 type Smtp = NonNullable<Awaited<ReturnType<typeof transport>>>;
 
-async function send(smtp: Smtp, cfg: Row, image: Row | null, to: string, subject: string, body: string) {
-  const name = smtp.fromName || cfg.from_name;
+async function send(smtp: Smtp, image: Image | null, to: string, subject: string, body: string) {
+  const name = smtp.fromName;
   await smtp.mailer.sendMail({
     from: name ? { name, address: smtp.from } : smtp.from,
     to, subject, text: body, html: html(body, !!image),
@@ -99,7 +108,7 @@ async function runDaily() {
   if (!due?.length) return { sent: 0, errors: 0, pending: 0 };
   const smtp = await transport();
   if (!smtp) return { sent: 0, errors: 0, pending: due.length, warning: "Falta configurar el correu sortint (Configuració → Correu sortint)." };
-  const { cfg, templates, image } = await loadContext();
+  const { templates, imageFor } = await loadContext();
   let sent = 0, errors = 0;
   for (const d of (due as Row[]).slice(0, BATCH)) {
     const base = { client_id: d.client_id, kind: d.kind, year: d.year, email: d.email, language: d.language };
@@ -109,7 +118,7 @@ async function runDaily() {
     const { data: claim, error: cErr } = await admin.from("admi_greeting_log").insert({ ...base, status: "sent" }).select("id").single();
     if (cErr) continue;
     const v = vars(d.kind, d.client_name, d.first_name, today);
-    try { await send(smtp, cfg, image, d.email, fill(tpl.subject, v), fill(tpl.body, v)); sent++; }
+    try { await send(smtp, await imageFor(d.kind, d.language), d.email, fill(tpl.subject, v), fill(tpl.body, v)); sent++; }
     catch (e) { await admin.from("admi_greeting_log").update({ status: "error", error: String((e as Error).message || e).slice(0, 500) }).eq("id", claim.id); errors++; }
   }
   smtp.mailer.close();
@@ -119,13 +128,13 @@ async function runDaily() {
 async function runTest(p: Row) {
   const smtp = await transport();
   if (!smtp) return { ok: false, message: "Falta configurar el correu sortint (Configuració → Correu sortint): servidor, usuari i contrasenya." };
-  const { cfg, templates, image } = await loadContext();
+  const { templates, imageFor } = await loadContext();
   const kind = KINDS.includes(p.kind) ? p.kind : KINDS[0];
   const tpl = pickTemplate(templates, kind, p.language || "ca", false);
   if (!tpl) return { ok: false, message: "No hi ha cap text per a aquesta felicitació." };
   const v = vars(kind, "Maria Exemple", "Maria", todayMadrid());
   try {
-    await send(smtp, cfg, image, p.email, "[PROVA] " + fill(tpl.subject, v), fill(tpl.body, v));
+    await send(smtp, await imageFor(kind, p.language || "ca"), p.email, "[PROVA] " + fill(tpl.subject, v), fill(tpl.body, v));
     await admin.from("admi_greeting_log").insert({ kind, year: Number(todayMadrid().slice(0, 4)), email: p.email, language: tpl.language, status: "test" });
     return { ok: true, message: `Prova enviada a ${p.email} (text en ${tpl.language}).` };
   } catch (e) {
