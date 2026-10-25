@@ -60,7 +60,7 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
       try {
         if (canWrite) await generateAutomaticAlerts().catch(() => 0);
         const [c, a] = await Promise.all([dashboardCounts(), listAlerts({ onlyPending: true })]);
-        setCounts(c); setAlerts(a);
+        setCounts(c); setAlerts(a.filter(x => x.alert_type !== "naixement")); // els aniversaris no es mostren a l'Inici
         listCases().then(setCases).catch(() => {});
         listIncidents().then(setIncidents).catch(() => {});
       } catch (e) { setError(errorText(e)); }
@@ -88,7 +88,7 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
   const stats: [any, string, string, string[], Section, string][] = [
     [Building2, n(counts?.properties), "Immobles", ["actius"], "Immobles", "green"],
     [Users, n(counts?.clients), "Clients", ["actius"], "Clients", "blue"],
-    [Bell, n(counts?.alerts), "Alertes", [`${dueSoon.length} en 7 dies`, `${counts?.overdue ?? 0} vençudes`], "Alertes", "amber"],
+    [Bell, counts ? String(alerts.length) : "…", "Alertes", [`${dueSoon.length} en 7 dies`, `${alerts.filter(a => a.overdue).length} vençudes`], "Alertes", "amber"],
     [Wrench, counts ? String(revDue.length) : "…", "Revisions", [`${revDue.length - revLate} pròximes`, `${revLate} vençudes`], "Revisions", "teal"],
     [AlertTriangle, n(counts?.incidents), "Incidències", [`${incOpen} obertes`, `${incProgress} en curs`], "Incidències", "red"],
     [KeyRound, n(counts?.keys), "Claus", ["fora d'oficina"], "Claus", "purple"],
@@ -130,7 +130,7 @@ export function Dashboard({ canWrite, userName, onNavigate, onOpenClient, onOpen
       <div className="dashboard-layout">
         <div className="dashboard-main">
           <section className="welcome-banner">
-            <div className="welcome-copy"><small>MAREMONTIS</small><h1>{greeting}{userName ? `, ${userName}` : ""}</h1><p>Aquí tens el resum de l'activitat d'avui.</p></div>
+            <div className="welcome-copy"><h1>{greeting}{userName ? `, ${userName}` : ""}</h1><p>Aquí tens el resum de l'activitat d'avui.</p></div>
             <div className="welcome-date">{DAYS[now.getDay()][0].toUpperCase() + DAYS[now.getDay()].slice(1)},<br /><strong>{now.getDate()} de {MONTHS[now.getMonth()]} de {now.getFullYear()}</strong></div>
           </section>
           {error && <Notice kind="error">No s'han pogut carregar les dades: {error}</Notice>}
