@@ -47,7 +47,8 @@ supabase/esborrar_dades_prova.sql  esborra les dades d'exemple («DADES DE PROVA
    factures d'administració d'inici d'any només de clients no donats de baixa.
 3. Fórmula del Model 210 a validar amb l'assessoria (el PDF aplica dues vegades el tipus de gravamen).
 4. Adaptar la importació d'IBI al format real del fitxer.
-5. Enviament de correus directe (sense obrir Outlook) i amb fotos adjuntes → servei SMTP + funció al servidor.
+5. Enviament de correus directe (sense obrir Outlook) i amb fotos adjuntes. Ja hi ha SMTP configurable (Configuració → Correu sortint)
+   i la funció `supabase/functions/admi-felicitacions` (felicitacions automàtiques); falta fer-la servir per a notes i revisions.
 6. ~~Que el tipus de contracte amagui les funcions que no inclou~~ (fet: `contractFeatures()` a `src/data/admin.ts`; sense contracte, tot habilitat).
 7. Migració de les dades reals del programa antic.
 8. ~~Provar la pujada de fotos amb el Supabase real~~ (permisos del bucket `fotos` provats; falta una prova des d'un mòbil real).
