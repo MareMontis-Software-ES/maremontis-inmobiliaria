@@ -552,3 +552,15 @@
 .help-content p{font-size:14px;line-height:1.5}
 .help-pending{color:#69736b;font-style:italic}
 @media(max-width:600px){.help-body{grid-template-columns:1fr}.help-nav{grid-template-columns:repeat(2,1fr);border-right:0;border-bottom:1px solid #eee6d6}}
+
+/* Fitxa del client (totes les pestanyes): cada apartat a tot l'ample, un sota l'altre, i les dades en horitzontal */
+.detail-main .client-edit-row,.detail-main .finca-columns,.detail-main .taxes-columns,.detail-main .related-grid{grid-template-columns:1fr}
+.detail-main .form-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.detail-main .info-cols{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.detail-main .info-cols .info-row:last-child{border-bottom:1px solid #f0eadf}
+
+/* Ruta d'una carpeta amb «Buscar…» i «Enganxar» */
+.path-input{display:flex;gap:6px;align-items:center;min-width:0}
+.path-input input{flex:1}
+.path-input .outline-btn{align-self:auto;white-space:nowrap}
+.f small.path-msg{color:#5b4a26}

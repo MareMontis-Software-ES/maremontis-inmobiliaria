@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, FileText, Folder, Mail, MapPin, Phone, Plus, Trash2, UserRound } from "lucide-react";
 import { CheckInput, SelectInput, TextArea, TextInput } from "../../components/ui";
+import { FolderPathInput } from "../../components/FolderPathInput";
 import { COUNTRIES, EMAIL_TYPES, NATIONALITIES, PHONE_TYPES, PROVINCES, STREET_TYPES, TITLES, TOWNS } from "../../lib/constants";
 import { accountCode, checkDniNie, checkEmail } from "../../lib/format";
 import { findDuplicates, type DuplicateHit } from "../../data/clients";
@@ -112,35 +113,33 @@ export function ClientForm({ value: f, onChange, responsibles, isNew, showErrors
         </div>
       </section>
 
-      <div className="client-edit-row">
-        {/* ---------- Adreça ---------- */}
-        <section className="new-client-panel">
-          <h3><MapPin size={18} />Adreça</h3>
-          <div className="form-grid four">
-            <SelectInput label="Tipus de via" value={f.address.street_type} onChange={v => setAddr({ street_type: v })} options={STREET_TYPES} empty="—" />
-            <TextInput label="Adreça" value={f.address.street_name} onChange={v => setAddr({ street_name: v })} wide2 />
-            <TextInput label="Número" value={f.address.street_number} onChange={v => setAddr({ street_number: v })} />
-            <TextInput label="Bloc, urbanització, pis…" value={f.address.extra} onChange={v => setAddr({ extra: v })} wide />
-            <TextInput label="Codi postal" value={f.address.postal_code} onChange={pickPostalCode} list="postal-codes" />
-            <TextInput label="Població" value={f.address.municipality} onChange={pickTown} list="towns" />
-            <SelectInput label="Província" value={f.address.province} onChange={v => setAddr({ province: v })} options={withCurrent(PROVINCES, f.address.province)} empty="—" />
-            <SelectInput label="País" value={f.address.country} onChange={pickCountry} options={withCurrent(COUNTRIES.map(x => x.name), f.address.country)} empty="—" />
-          </div>
-        </section>
+      {/* ---------- Adreça ---------- */}
+      <section className="new-client-panel">
+        <h3><MapPin size={18} />Adreça</h3>
+        <div className="form-grid four">
+          <SelectInput label="Tipus de via" value={f.address.street_type} onChange={v => setAddr({ street_type: v })} options={STREET_TYPES} empty="—" />
+          <TextInput label="Adreça" value={f.address.street_name} onChange={v => setAddr({ street_name: v })} wide2 />
+          <TextInput label="Número" value={f.address.street_number} onChange={v => setAddr({ street_number: v })} />
+          <TextInput label="Bloc, urbanització, pis…" value={f.address.extra} onChange={v => setAddr({ extra: v })} wide />
+          <TextInput label="Codi postal" value={f.address.postal_code} onChange={pickPostalCode} list="postal-codes" />
+          <TextInput label="Població" value={f.address.municipality} onChange={pickTown} list="towns" />
+          <SelectInput label="Província" value={f.address.province} onChange={v => setAddr({ province: v })} options={withCurrent(PROVINCES, f.address.province)} empty="—" />
+          <SelectInput label="País" value={f.address.country} onChange={pickCountry} options={withCurrent(COUNTRIES.map(x => x.name), f.address.country)} empty="—" />
+        </div>
+      </section>
 
-        {/* ---------- Altres dades personals ---------- */}
-        <section className="new-client-panel">
-          <h3><FileText size={18} />Altres dades personals</h3>
-          <div className="form-grid">
-            <SelectInput label="Idioma (correus)" value={c.language} onChange={v => setClient("language", v)} options={languages} empty="—" />
-            <SelectInput label="Nacionalitat" value={c.nationality} onChange={v => setClient("nationality", v)} options={withCurrent(NATIONALITIES, c.nationality)} empty="—" />
-            <TextInput label="Data naixement" type="date" value={c.birth_date} onChange={v => setClient("birth_date", v)} />
-            <TextInput label="Ciutat naixement" value={c.birth_city} onChange={v => setClient("birth_city", v)} />
-            <SelectInput label="País naixement" value={c.birth_country_code} onChange={v => setClient("birth_country_code", v)} options={withCurrent(COUNTRIES.map(x => x.code), c.birth_country_code).map(code => [code, COUNTRIES.find(x => x.code === code)?.name || code] as [string, string])} empty="—" />
-            <TextInput label="Anagrama" value={c.anagram} onChange={v => setClient("anagram", v)} />
-          </div>
-        </section>
-      </div>
+      {/* ---------- Altres dades personals ---------- */}
+      <section className="new-client-panel">
+        <h3><FileText size={18} />Altres dades personals</h3>
+        <div className="form-grid four">
+          <SelectInput label="Idioma (correus)" value={c.language} onChange={v => setClient("language", v)} options={languages} empty="—" />
+          <SelectInput label="Nacionalitat" value={c.nationality} onChange={v => setClient("nationality", v)} options={withCurrent(NATIONALITIES, c.nationality)} empty="—" />
+          <TextInput label="Data naixement" type="date" value={c.birth_date} onChange={v => setClient("birth_date", v)} />
+          <TextInput label="Ciutat naixement" value={c.birth_city} onChange={v => setClient("birth_city", v)} />
+          <SelectInput label="País naixement" value={c.birth_country_code} onChange={v => setClient("birth_country_code", v)} options={withCurrent(COUNTRIES.map(x => x.code), c.birth_country_code).map(code => [code, COUNTRIES.find(x => x.code === code)?.name || code] as [string, string])} empty="—" />
+          <TextInput label="Anagrama" value={c.anagram} onChange={v => setClient("anagram", v)} />
+        </div>
+      </section>
 
       <div className="client-edit-row">
         {/* ---------- Telèfons ---------- */}
@@ -185,7 +184,7 @@ export function ClientForm({ value: f, onChange, responsibles, isNew, showErrors
       <section className="new-client-panel">
         <h3><Folder size={18} />Documental i observacions</h3>
         <div className="form-grid">
-          <TextInput label="Ruta de la carpeta a l'ordinador" value={c.documents_path} onChange={v => setClient("documents_path", v)} placeholder="P:\ADMINISTRACIO\CLIENTS\..." wide />
+          <FolderPathInput label="Ruta de la carpeta a l'ordinador" value={c.documents_path} onChange={v => setClient("documents_path", v)} placeholder="P:\ADMINISTRACIO\CLIENTS\..." />
           <TextArea label="Observacions" value={c.observations} onChange={v => setClient("observations", v)} rows={3} />
         </div>
       </section>
