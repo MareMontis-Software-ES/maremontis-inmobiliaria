@@ -79,10 +79,30 @@ export async function listProfiles(): Promise<ProfileRow[]> {
   if (error) throw error;
   return (data || []).map((p: Row) => ({ ...p, full_name: s(p.full_name), email: s(p.email) }) as ProfileRow);
 }
-export async function saveProfile(p: ProfileRow) {
-  const { error } = await supabase.from("admi_users").update({ full_name: p.full_name, role: p.role, is_responsible: p.is_responsible, active: p.active }).eq("id", p.id);
+/** Desa nom, permís i responsable. L'alta/baixa (actiu) passa pel servidor perquè també bloqueja l'entrada. */
+export async function saveProfile(p: ProfileRow, wasActive: boolean) {
+  const { error } = await supabase.from("admi_users").update({ full_name: p.full_name, role: p.role, is_responsible: p.is_responsible }).eq("id", p.id);
   if (error) throw error;
+  if (p.active !== wasActive) await usersServer({ action: "active", id: p.id, active: p.active });
 }
+
+export const MIN_PASSWORD = 8;
+export interface NewUser { email: string; password: string; full_name: string; role: string; is_responsible: boolean }
+export const emptyNewUser = (): NewUser => ({ email: "", password: "", full_name: "", role: "oficina", is_responsible: false });
+
+/** Crear usuaris i canviar contrasenya, e-mail o alta/baixa: funció del servidor «admi-usuaris» (només administradors) */
+async function usersServer(body: Row): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("admi-usuaris", { body });
+  if (error) {
+    const msg = await (error as any).context?.json?.().then((j: Row) => j?.message).catch(() => "");
+    throw new Error(msg || "No s'ha pogut contactar amb el servidor. Comprova que la funció «admi-usuaris» està publicada a Supabase.");
+  }
+  if (!data?.ok) throw new Error(s(data?.message) || "Error desconegut");
+  return s(data.message);
+}
+export const createUser = (u: NewUser) => usersServer({ action: "create", ...u });
+export const setUserPassword = (id: string, password: string) => usersServer({ action: "password", id, password });
+export const setUserEmail = (id: string, email: string) => usersServer({ action: "email", id, email });
 
 // ---------------- Textos de correu ----------------
 export interface Template { id?: string; kind: string; language: string; subject: string; body: string; reviewed: boolean }

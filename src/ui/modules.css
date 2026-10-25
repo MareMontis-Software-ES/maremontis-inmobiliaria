@@ -524,3 +524,10 @@
 .greeting-image-empty{display:flex;align-items:center;justify-content:center;background:#f4f1ec;color:#8a8478;font-size:13px}
 .greeting-image figcaption{display:flex;flex-direction:column;gap:6px;padding:8px 10px;font-size:13px}
 .add-small.disabled{opacity:.5}
+
+/* Configuració → Usuaris: alta d'usuari i canvi de contrasenya / e-mail */
+.sub-form{border:1px solid #e0d8c8;background:#f8f4e9;border-radius:6px;padding:10px 12px;margin:0 0 12px;display:grid;gap:8px}
+.sub-form>strong{font-size:12px;color:#103e33}
+.sub-form .hint{margin:0}
+.mini-table td.row-actions{white-space:nowrap}
+.mini-table td.row-actions .outline-btn{display:inline-flex;margin-right:4px}
