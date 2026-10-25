@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { List, Plus, Save, Users, X } from "lucide-react";
 import { emptyClient, findDuplicates, getClient, isAccountCodeTaken, isClientCodeTaken, listClients, saveClient, setClientStatus } from "../../data/clients";
 import { listResponsibles } from "../../data/lookups";
+import { syncRelatedOwners } from "../../data/finques";
 import { errorText } from "../../lib/supabase";
 import { accountCode } from "../../lib/format";
 import { Notice } from "../../components/ui";
@@ -212,6 +213,7 @@ function ClientFicha({ id, request, clients, responsibles, canWrite, userId, onN
       const dups = await findDuplicates(draft).catch(() => []);
       if (dups.length && !window.confirm(`Atenció: possible client duplicat.\n\n${dups.map(d => `· ${accountCode(d.client_code)} ${d.name}${d.status !== "active" ? " (baixa)" : ""}: ${d.fields.join(", ")}`).join("\n")}\n\nVols gravar igualment?`)) return;
       const newId = await saveClient(draft);
+      await syncRelatedOwners(newId); // el cònjuge/copropietari d'una finca en passa a ser titular
       await onListChanged();
       setMode("detail"); setDraft(null); setTried(false);
       if (isNew) { setPropertyId("new"); setTab("finca"); onCreated(newId); } // client nou → alta de la seva primera finca

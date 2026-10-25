@@ -27,7 +27,7 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Alta immoble | Núm. administració = armari de claus; en donar de baixa queda lliure | Proposa el primer número lliure; avisa si està ocupat; reutilitza els de baixes | ✅ |
 | Alta immoble | Quina oficina té la clau; tipus via + adreça; treure data | Inclòs | ✅ |
 | Dades generals (client) | Adreça de correspondència ratllada | Eliminada | ❌ |
-| Finques | Lloguer turístic/urbà; % propietat; data de baixa no elimina | Inclòs (titulars amb %; baixa lògica) | ✅ |
+| Finques | Lloguer turístic/urbà; % propietat; data de baixa no elimina | Inclòs (titulars amb %; baixa lògica). Es pot gravar amb un sol titular de menys del 100 %: surt l'avís «Falta un X % de propietat» fins que s'afegeix el cònjuge/copropietari a la seva pestanya, que en passa a ser titular automàticament. «Ruta documental» amb «Buscar…» i «Enganxar» | ✅ |
 | Finques | Internet, alarma (2 claus), assegurança (pòlissa, inici, fi), cèdula (caducitat + alerta), certificat energètic (data, 2 codis + alerta), HUT, NRUA, CUPS | Inclòs; alertes automàtiques de venciment | ✅ |
 | Finques | Manteniment de claus per immoble | Pestanya Claus i menú Claus | ✅ |
 | Impostos | % en propietat; fórmules base i quota | Per any; càlcul automàtic; part del client segons % | ✅ |

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import type { FieldDef } from "../data/finques";
+import { FolderPathInput } from "./FolderPathInput";
 
 export function FieldGrid({ fields, values, onChange, editing, errors = {} }: {
   fields: FieldDef[];
@@ -24,6 +25,9 @@ function FieldInput({ def, value, onChange, editing, error }: { def: FieldDef; v
   const cls = "f" + (def.wide || def.type === "textarea" ? " f-wide" : "") + (error ? " f-error" : "") + (!editing ? " f-locked" : "");
   const label = <span>{def.label}{def.required && editing && <b className="req">*</b>}</span>;
 
+  if (def.type === "folder") {
+    return <FolderPathInput label={def.label} kind="finca" value={value} readOnly={!editing} onChange={onChange} placeholder="P:\\ADMINISTRACIO\\FINQUES\\..." />;
+  }
   if (def.type === "textarea") {
     return <label className={cls}>{label}<textarea rows={3} value={value} readOnly={!editing} onChange={e => onChange(e.target.value)} /></label>;
   }
