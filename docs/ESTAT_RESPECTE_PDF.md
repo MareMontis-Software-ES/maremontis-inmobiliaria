@@ -97,3 +97,4 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Logo | Logo MareMontis a dalt del menú | ✅ |
 | Prefix `admi_` a les taules | Totes les taules i vistes porten `admi_` i un nom descriptiu (p. ex. `admi_users`, `admi_change_history`, `admi_tradespeople`, `admi_property_revisions`). Migració `20261025000002`; l'esquema `old_demo` (demo antiga) esborrat | ✅ |
 | Icona a l'escriptori | La web és instal·lable (PWA): Chrome/Edge → «Instal·lar INMO» crea l'accés directe amb el logo i obre el programa en una finestra pròpia. `public/manifest.webmanifest`, icones a `public/icons/`, `public/sw.js` (sense memòria cau, sempre la darrera versió) | ✅ |
+| Iniciar sessió sempre | La sessió es guarda només mentre la finestra és oberta (`sessionStorage`): en obrir el programa sempre demana usuari i contrasenya (cada usuari té els seus permisos) | ✅ |
