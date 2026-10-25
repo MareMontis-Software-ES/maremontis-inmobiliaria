@@ -9,7 +9,7 @@ type Row = Record<string, any>;
 // d'aquesta llista: per afegir un camp nou n'hi ha prou amb posar-lo aquí
 // (i a la base de dades).
 // ---------------------------------------------------------------------------
-export type FieldType = "text" | "num" | "money" | "date" | "select" | "password" | "textarea";
+export type FieldType = "text" | "num" | "money" | "date" | "select" | "password" | "textarea" | "folder";
 export interface FieldDef { k: string; label: string; type?: FieldType; options?: [string, string][]; wide?: boolean; required?: boolean }
 export interface FieldGroup { id: string; title: string; fields: FieldDef[] }
 
@@ -36,7 +36,7 @@ export function propertyGroups(zones: [string, string][], contractTypes: [string
       { k: "phone_company", label: "Companyia telèfon" },
       { k: "community_name", label: "Comunitat de propietaris" },
       { k: "community_contact", label: "Contacte comunitat" },
-      { k: "documents_path", label: "Ruta documental", wide: true },
+      { k: "documents_path", label: "Ruta documental", type: "folder", wide: true },
     ] },
     { id: "aeat", title: "Nom vàlid per a l'AEAT (renda)", fields: [
       { k: "aeat_street_type", label: "Tipus via", type: "select", options: st },
@@ -174,6 +174,30 @@ export async function saveProperty(form: PropertyForm, owners: Owner[]): Promise
     if (ins.error) throw ins.error;
   }
   return id!;
+}
+
+/** Cònjuge/copropietaris afegits a la pestanya «Cònjuge - copropietaris» d'una finca: passen a ser-ne
+ *  titulars amb el seu % de propietat (si encara no ho són). Si ja ho són i tenen %, s'actualitza. */
+export async function syncRelatedOwners(clientId: string) {
+  const { data: rel, error } = await supabase.from("admi_client_related_persons")
+    .select("id, property_id, ownership_percentage").eq("client_id", clientId).not("property_id", "is", null);
+  if (error) throw error;
+  if (!rel?.length) return;
+  const props = [...new Set(rel.map((r: Row) => r.property_id as string))];
+  const { data: own, error: e2 } = await supabase.from("admi_property_owners")
+    .select("id, property_id, related_person_id, ownership_percentage").in("property_id", props);
+  if (e2) throw e2;
+  for (const r of rel as Row[]) {
+    const pct = r.ownership_percentage === null || r.ownership_percentage === "" ? null : Number(r.ownership_percentage);
+    const o = (own || []).find((x: Row) => x.property_id === r.property_id && x.related_person_id === r.id);
+    if (!o) {
+      const ins = await supabase.from("admi_property_owners").insert({ property_id: r.property_id, related_person_id: r.id, ownership_percentage: pct ?? 0, is_main: false });
+      if (ins.error) throw ins.error;
+    } else if (pct !== null && Number(o.ownership_percentage) !== pct) {
+      const up = await supabase.from("admi_property_owners").update({ ownership_percentage: pct }).eq("id", o.id);
+      if (up.error) throw up.error;
+    }
+  }
 }
 
 /** Baixa: NO s'esborra (cal per al model 210 de l'any següent); el número d'armari queda lliure. */

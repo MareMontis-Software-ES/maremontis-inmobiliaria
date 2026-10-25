@@ -45,6 +45,7 @@
 .notice-info{background:#e9f0e7;color:#2d5240;border:1px solid #cddcc9}
 .notice-error{background:#fbe9e2;color:#8e2f1b;border:1px solid #efc6b6}
 .notice-ok{background:#e3f1e6;color:#21573b;border:1px solid #bfdcc6}
+.notice-warn{background:#fdf3dc;color:#7a5410;border:1px solid #efd9a3}
 .empty-line{color:#7b817d;font-style:italic;font-size:12px;margin:4px 0}
 .empty-line.pad{padding:10px 12px}
 .table-empty{text-align:center;color:#7b817d;font-style:italic;padding:28px!important;white-space:normal}

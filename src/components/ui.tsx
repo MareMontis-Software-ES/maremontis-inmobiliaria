@@ -68,10 +68,10 @@ export function Info2({ label, value }: { label: string; value?: ReactNode }) {
   return <div className="info-row"><span>{label}</span><strong>{value || <em>—</em>}</strong></div>;
 }
 
-export function Notice({ kind = "info", children }: { kind?: "info" | "error" | "ok"; children: ReactNode }) {
+export function Notice({ kind = "info", children }: { kind?: "info" | "error" | "ok" | "warn"; children: ReactNode }) {
   return (
     <div className={"notice notice-" + kind}>
-      {kind === "error" ? <AlertTriangle size={16} /> : <Info size={16} />}
+      {kind === "error" || kind === "warn" ? <AlertTriangle size={16} /> : <Info size={16} />}
       <div>{children}</div>
     </div>
   );

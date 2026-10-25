@@ -57,6 +57,7 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
   // El núm. d'administració i l'oficina de la clau es veuen i es canvien a la pestanya Claus
   const groups = useMemo(() => propertyGroups(lk.zones, lk.contractTypes, STREET_TYPES).map(g => ({ ...g, fields: g.fields.filter(f => !KEY_FIELDS.includes(f.k)) })), [lk]);
   const total = owners.reduce((a, o) => a + (Number(o.percentage) || 0), 0);
+  const missing = 100 - total; // un sol titular amb menys del 100 %: el cònjuge/copropietari s'afegeix després
 
   if (!form) return <div className="tab-pad">{error ? <Notice kind="error">{error}</Notice> : <p className="empty-line">Carregant finca…</p>}</div>;
 
@@ -70,6 +71,8 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
     setError("");
     if (errors.address) { setError("Revisa els camps obligatoris."); return; }
     if (!owners.length) { setError("La finca ha de tenir almenys un titular."); return; }
+    if (owners.some(o => o.percentage !== "" && (Number(o.percentage) < 0 || Number(o.percentage) > 100))) { setError("El % de propietat de cada titular ha de ser entre 0 i 100."); return; }
+    if (total > 100.01) { setError("Els percentatges dels titulars sumen més del 100 %."); return; }
     setSaving(true);
     try {
       const used = await adminNumberTaken(Number(form!.admin_number), form!.id);
@@ -153,7 +156,14 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
                 {editing ? <button type="button" className="icon-del" title="Treure" onClick={() => setOwners(l => l.filter((_, j) => j !== i))}><Trash2 size={14} /></button> : <span />}
               </div>
             ))}
-            <p className={"hint" + (Math.abs(total - 100) > 0.01 ? " hint-warn" : "")}>Total: {total.toLocaleString("ca-ES")} %{Math.abs(total - 100) > 0.01 && " — hauria de sumar 100 %"}</p>
+            <p className={"hint" + (Math.abs(total - 100) > 0.01 ? " hint-warn" : "")}>Total: {total.toLocaleString("ca-ES")} %{total > 100.01 && " — no pot passar del 100 %"}</p>
+            {missing > 0.01 && (
+              <Notice kind="warn">
+                <strong>Falta un {missing.toLocaleString("ca-ES")} % de propietat</strong>: falta afegir el cònjuge o el copropietari.
+                {editing ? " Pots gravar la finca igualment. " : " "}
+                Afegeix-lo a la pestanya <strong>«Cònjuge - copropietaris»</strong> amb el seu % i quedarà com a titular d'aquesta finca.
+              </Notice>
+            )}
             {editing && (
               <select className="add-owner" value="" onChange={e => addOwner(e.target.value)}>
                 <option value="">+ Afegir titular…</option>
