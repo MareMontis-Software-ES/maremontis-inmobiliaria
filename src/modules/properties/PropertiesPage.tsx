@@ -6,6 +6,7 @@ import { listProperties, type PropertyRow } from "../../data/properties";
 import { errorText } from "../../lib/supabase";
 import { fmtDate } from "../../lib/format";
 import { Notice } from "../../components/ui";
+import { ExportButtons } from "../../components/ExportButtons";
 import { BaixesView } from "./BaixesView";
 
 const norm = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -28,7 +29,14 @@ export function PropertiesPage({ onOpenProperty, canWrite }: { onOpenProperty: (
 
   return (
     <div className="work-area list-view">
-      <div className="page-title"><div><small>GESTIÓ IMMOBILIÀRIA</small><h1>Immobles</h1><p>Cercador de finques. En obrir-ne una, es mostra dins la fitxa del seu titular.</p></div></div>
+      <div className="page-title"><div><small>GESTIÓ IMMOBILIÀRIA</small><h1>Immobles</h1><p>Cercador de finques. En obrir-ne una, es mostra dins la fitxa del seu titular.</p></div>
+        {status !== "baixa" && <div className="head-actions">
+          <ExportButtons disabled={!filtered.length} table={() => ({ fileName: "immobles", title: "Immobles",
+            subtitle: [status === "active" ? "Finques actives" : "Totes les finques", zone ? `Zona ${zone}` : "", q ? `Cerca «${q}»` : ""].filter(Boolean).join(" · "),
+            head: ["Núm. adm.", "Adreça", "Zona", "Població", "Lloguer", "Titular", "Estat"],
+            rows: filtered.map(r => [r.admin_number, r.address, r.zone, r.municipality, USE[r.rental_use] || "", r.owners.map(o => o.name + (o.percentage != null && o.percentage < 100 ? ` (${o.percentage}%)` : "")).join(", "), r.status === "baixa" ? `Baixa ${fmtDate(r.baixa_date)}` : "Activa"]) })} />
+        </div>}
+      </div>
       {error && <Notice kind="error">{error}</Notice>}
       <div className="filter-bar">
         {([["active", "Finques actives"], ["baixa", "Històric de baixes"], ["", "Totes"]] as const).map(([k, l]) =>

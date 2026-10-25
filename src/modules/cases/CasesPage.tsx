@@ -1,12 +1,12 @@
 // «Revisions» del menú = Control de cases. Llistat de totes les cases amb la pròxima
 // revisió calculada i filtre per data (PDF: «saber quins immobles s'han de revisar»).
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Download } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Empty, Notice } from "../../components/ui";
 import { errorText } from "../../lib/supabase";
 import { addDaysISO, fmtDate, todayISO } from "../../lib/format";
 import { listCases, type CaseRow } from "../../data/cases";
-import { downloadText, toCsv } from "../../data/global";
+import { ExportButtons } from "../../components/ExportButtons";
 import { CaseView } from "./CaseView";
 
 export function CasesPage({ canWrite, userId, onOpenClient }: { canWrite: boolean; userId: string; onOpenClient: (id: string) => void }) {
@@ -40,10 +40,12 @@ export function CasesPage({ canWrite, userId, onOpenClient }: { canWrite: boolea
   return (
     <div className="work-area list-view">
       <div className="page-title"><div><small>CONTROL DE CASES</small><h1>Revisions</h1><p>Revisions d'octubre a juny cada 2,5 mesos (sense Nadal ni Setmana Santa), segons el contracte de cada finca.</p></div>
-        <button className="cancel-btn" disabled={!list.length} onClick={() => downloadText("control-cases.csv",
-          toCsv(["Zona", "Cognoms", "Nom", "Tipus contracte", "Finca", "Núm. adm.", "Última revisió", "Nº", "Pròxima revisió"],
-            list.map(r => [r.zone, r.client_name.split(" ").slice(1).join(" "), r.client_name.split(" ")[0], r.contract, r.address, r.admin_number, fmtDate(r.last_revision_date), r.last_revision_number, fmtDate(r.next?.date)])), "text/csv")}>
-          <Download size={16} /> Excel (CSV)</button>
+        <div className="head-actions">
+          <ExportButtons disabled={!list.length} table={() => ({ fileName: "control-cases", title: "Control de cases",
+            subtitle: [mode === "pendents" ? `A revisar fins al ${fmtDate(until)}` : mode === "totes" ? "Totes les cases" : "Contracte sense revisions", zone ? `Zona ${zone}` : "", q ? `Cerca «${q}»` : ""].filter(Boolean).join(" · "),
+            head: ["Zona", "Cognoms", "Nom", "Tipus contracte", "Finca", "Núm. adm.", "Última revisió", "Nº", "Pròxima revisió"],
+            rows: list.map(r => [r.zone, r.client_name.split(" ").slice(1).join(" "), r.client_name.split(" ")[0], r.contract, r.address, r.admin_number, fmtDate(r.last_revision_date), r.last_revision_number, fmtDate(r.next?.date)]) })} />
+        </div>
       </div>
       {error && <Notice kind="error">{error}</Notice>}
       <div className="filter-bar">

@@ -284,34 +284,48 @@
 .dirty-dot{width:8px;height:8px;border-radius:50%;background:#c28b38;flex:0 0 auto}
 .clients-tabs-host .list-view{padding-top:16px}
 
-/* --- Estadístiques --- */
+/* --- Estadístiques i llistats a mida --- */
 .stats-page{padding-bottom:24px}
-.stats-heading{font-size:15px;color:#174c40;margin:6px 0 12px}
-.stats-year-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px}
-.stats-year-bar label{display:flex;align-items:center;gap:8px;font-size:12px;color:#384a40}
-.stats-year-bar select{height:32px;border:1px solid #ddd5c4;border-radius:4px;background:#faf7f0;padding:0 8px;font:inherit;font-size:12px}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
-.stat-figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin-bottom:6px}
-.stat-figure{display:flex;flex-direction:column;gap:2px}
-.stat-figure strong{font-size:24px;color:#152f27;font-variant-numeric:tabular-nums}
-.stat-figure span{font-size:11px;color:#384a40}
-.stat-figure small{font-size:10px;color:#7d8178}
-.bar-list{display:grid;gap:6px}
-.bar-row{display:grid;grid-template-columns:minmax(80px,38%) minmax(0,1fr) 36px;align-items:center;gap:8px;font-size:11px;color:#384a40}
-.bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.report-layout{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:12px;align-items:start}
+.report-config{display:grid;gap:12px;min-width:0}
+.report-config select,.report-config input:not([type=checkbox]){width:100%;min-width:0;height:30px;border:1px solid #ddd5c4;border-radius:4px;background:#faf7f0;padding:0 8px;font:inherit;font-size:12px}
+.seg{display:flex;border:1px solid #d8d0c0;border-radius:6px;overflow:hidden;margin-bottom:8px}
+.seg:last-child{margin-bottom:0}
+.seg button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-left:1px solid #d8d0c0;background:#fffdf7;padding:7px 6px;font:inherit;font-size:12px;color:#1d2f28;cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button.on{background:#174c40;color:#fff;font-weight:600}
+.report-filter{display:grid;gap:5px;padding:8px 0;border-top:1px dashed #e0d8c8}
+.report-filter-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto;gap:5px;align-items:center}
+.report-field .report-filter-row{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.icon-only{border:0;background:transparent;color:#b0391f;padding:4px;display:grid;place-items:center;cursor:pointer}
+.report-field,.report-inline{display:grid;gap:4px;font-size:11px;color:#384a40;margin-bottom:9px}
+.report-inline{margin:10px 0 0}
+.report-cols{max-height:380px;overflow:auto;border:1px solid #eee7d9;border-radius:5px}
+.report-cols details{border-bottom:1px solid #eee7d9}
+.report-cols details:last-child{border-bottom:0}
+.report-cols summary{padding:7px 9px;font-size:12px;font-weight:600;color:#174c40;cursor:pointer;display:flex;align-items:center;gap:6px}
+.report-cols summary em{font-style:normal;background:#174c40;color:#fff;border-radius:9px;padding:0 6px;font-size:10px}
+.check-line{display:flex;align-items:center;gap:7px;padding:3px 10px 3px 22px;font-size:12px;color:#1d2f28;cursor:pointer}
+.check-line:hover{background:#f6f2e8}
+.report-result{min-width:0}
+.report-count{margin-left:auto;font-size:11px;color:#5d685f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%}
+.report-table{width:100%;border-collapse:collapse}
+.report-table th{background:#f0ede5;padding:7px 9px;font-size:11px;text-align:left;white-space:nowrap;position:sticky;top:0}
+.report-table td{padding:6px 9px;border-top:1px solid #eee7d9;font-size:12px}
+.report-table td.num,.report-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.report-table td.muted strong{color:#8a8f88;font-weight:400;font-style:italic}
+.report-table tfoot td{border-top:2px solid #d8cfbd;font-weight:700;background:#f8f4e9}
+.report-table .bar-cell{width:38%;min-width:120px}
 .bar-track{height:12px;display:block}
 .bar-track i{display:block;height:100%;min-width:2px;background:#2f6f5e;border-radius:0 4px 4px 0}
-.bar-row:hover .bar-track i{background:#174c40}
-.bar-row strong{text-align:right;color:#152f27;font-variant-numeric:tabular-nums}
-.month-bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;height:120px;margin:10px 0}
-.month-bars>div{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
-.month-bars small{font-size:10px;color:#384a40;height:12px;font-variant-numeric:tabular-nums}
-.month-bars span{flex:1;width:70%;display:flex;align-items:flex-end;border-bottom:1px solid #d8cfbd}
-.month-bars i{display:block;width:100%;background:#2f6f5e;border-radius:4px 4px 0 0}
-.month-bars>div:hover i{background:#174c40}
-.month-bars em{font-style:normal;font-size:10px;color:#7d8178}
-.stats-table td{padding:8px 10px;white-space:normal}
-.stats-table th{padding:8px 10px}
+.report-table tr:hover .bar-track i{background:#174c40}
+.saved-reports>span:first-child{font-size:12px;color:#5d685f}
+.saved-chip{display:inline-flex;border:1px solid #d8d0c0;border-radius:15px;background:#fffdf7;overflow:hidden}
+.saved-chip button{border:0;background:transparent;padding:5px 10px;font:inherit;font-size:12px;color:#1d2f28;cursor:pointer}
+.saved-chip button+button{padding:5px 8px 5px 2px;color:#8a8f88}
+.saved-chip button:hover{background:#efe9dc}
+.export-error{color:#b0391f;font-size:11px}
+@media(max-width:900px){.report-layout{grid-template-columns:1fr}.report-count{display:none}}
 
 /* --- Revisió: botons tàctils (Bon/Mal, Dins/Fora, Avisar) i fotos amb la càmera --- */
 .chip-btn{min-width:46px;height:26px;padding:0 10px;border:1px solid #cfc7b6;border-radius:13px;background:#f7f3ea;color:#4d5a52;font-size:11px;font-weight:700;white-space:nowrap}
