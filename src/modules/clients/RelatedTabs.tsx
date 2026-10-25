@@ -10,19 +10,27 @@ import type { ClientFull, PropertyLink, RelatedPerson } from "../../types";
 /** Persones relacionades que es mostren per a una finca (les antigues sense finca surten a totes) */
 const ofFinca = (r: RelatedPerson, propertyId: string) => r.property_id === propertyId || !r.property_id;
 
-export function RelatedTab({ full, finca, editing, onChange }: {
+export function RelatedTab({ full, finca, editing, onChange, onStartEdit }: {
   full: ClientFull; finca: PropertyLink; editing: boolean; onChange: (f: ClientFull) => void;
+  /** En mode consulta: entra a «Modificar client» amb aquestes dades (p. ex. amb un cònjuge nou afegit) */
+  onStartEdit?: (f: ClientFull) => void;
 }) {
   const list = full.related.map((r, i) => ({ r, i })).filter(x => ofFinca(x.r, finca.id));
   const setRel = (i: number, patch: Partial<RelatedPerson>) => onChange({ ...full, related: full.related.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
-  const add = (rel: RelatedPerson["relation"]) => onChange({ ...full, related: [...full.related, emptyRelated(rel, finca.id)] });
+  const withNew = (rel: RelatedPerson["relation"]) => ({ ...full, related: [...full.related, emptyRelated(rel, finca.id)] });
+  const add = (rel: RelatedPerson["relation"]) => onChange(withNew(rel));
   const remove = (i: number) => onChange({ ...full, related: full.related.filter((_, j) => j !== i) });
-  const hasSpouse = list.some(x => x.r.relation === "conjuge");
 
   if (!editing) {
     return (
-      <div className="tab-pad related-grid">
-        {!list.length && <Panel title="Cònjuge i copropietaris d'aquesta finca" icon={Users}><Empty>No n'hi ha cap. Afegeix-los amb «Modificar client».</Empty></Panel>}
+      <div className="tab-pad">
+      {onStartEdit && <div className="tab-actions inline">
+        <button type="button" className="add-small" onClick={() => onStartEdit(withNew("conjuge"))}><Plus size={13} /> Cònjuge</button>
+        <button type="button" className="add-small" onClick={() => onStartEdit(withNew("copropietari"))}><Plus size={13} /> Copropietari</button>
+        <span className="hint">De la finca «{finca.address}».</span>
+      </div>}
+      <div className="related-grid">
+        {!list.length && <Panel title="Cònjuge i copropietaris d'aquesta finca" icon={Users}><Empty>No n'hi ha cap.{onStartEdit ? " Afegeix-los amb els botons «+ Cònjuge» o «+ Copropietari»." : ""}</Empty></Panel>}
         {list.map(({ r, i }) => (
           <Panel key={r.id || i} title={(r.relation === "conjuge" ? "Cònjuge" : "Copropietari") + (!r.property_id ? " · sense finca assignada" : "")} icon={Users}>
             <div className="info-cols">
@@ -38,13 +46,14 @@ export function RelatedTab({ full, finca, editing, onChange }: {
           </Panel>
         ))}
       </div>
+      </div>
     );
   }
 
   return (
     <div className="tab-pad">
       <div className="tab-actions inline">
-        {!hasSpouse && <button type="button" className="add-small" onClick={() => add("conjuge")}><Plus size={13} /> Cònjuge</button>}
+        <button type="button" className="add-small" onClick={() => add("conjuge")}><Plus size={13} /> Cònjuge</button>
         <button type="button" className="add-small" onClick={() => add("copropietari")}><Plus size={13} /> Copropietari</button>
         <span className="hint">Només per a la finca «{finca.address}». Cada finca té els seus.</span>
       </div>

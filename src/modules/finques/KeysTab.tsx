@@ -15,6 +15,19 @@ export function KeysTab({ propertyId, canWrite, userId, onSaved }: { propertyId:
   const [keyEdit, setKeyEdit] = useState<{ admin_number: string; key_office: string } | null>(null);
   useEffect(() => { setKeyEdit(null); getPropertyKey(propertyId).then(setKey).catch(e => setError(errorText(e))); }, [propertyId]);
   const keyOffice = key?.key_office || "";
+  const [freeNumber, setFreeNumber] = useState("");
+  useEffect(() => { if (keyEdit) nextFreeAdminNumber().then(setFreeNumber).catch(() => {}); }, [!!keyEdit]);
+
+  /** Dona a la finca un número d'armari nou: el primer que no fa servir cap altra finca activa */
+  async function newNumber() {
+    if (!key) return;
+    setError("");
+    try {
+      const n = await nextFreeAdminNumber();
+      setFreeNumber(n);
+      setKeyEdit({ admin_number: n, key_office: keyEdit?.key_office ?? key.key_office });
+    } catch (e) { setError(errorText(e)); }
+  }
 
   async function saveKey() {
     if (!keyEdit) return;
@@ -52,7 +65,10 @@ export function KeysTab({ propertyId, canWrite, userId, onSaved }: { propertyId:
     <div className="tab-pad">
       {error && <Notice kind="error">{error}</Notice>}
       <Panel title="Clau de la finca" icon={KeyRound}
-        action={canWrite && key && !keyEdit && <button className="outline-btn small" onClick={() => setKeyEdit({ admin_number: key.admin_number, key_office: key.key_office })}><Pencil size={13} /> Modificar</button>}>
+        action={canWrite && key && !keyEdit && <span style={{ display: "flex", gap: 6 }}>
+          <button className="outline-btn small" onClick={newNumber}><Plus size={13} /> Núm. d'administració nou</button>
+          <button className="outline-btn small" onClick={() => setKeyEdit({ admin_number: key.admin_number, key_office: key.key_office })}><Pencil size={13} /> Modificar</button>
+        </span>}>
         <div className="form-grid four">
           <label className="f"><span>Núm. d'administració (armari)</span>
             <input type="number" min={1} value={keyEdit ? keyEdit.admin_number : key?.admin_number || ""} readOnly={!keyEdit} onChange={e => setKeyEdit({ ...keyEdit!, admin_number: e.target.value })} /></label>
@@ -64,8 +80,10 @@ export function KeysTab({ propertyId, canWrite, userId, onSaved }: { propertyId:
         </div>
         {keyEdit && <div className="tab-actions inline">
           <button className="save-btn" onClick={saveKey}><Save size={16} /> Guardar</button>
+          {freeNumber && keyEdit.admin_number !== freeNumber && <button className="outline-btn small" onClick={() => setKeyEdit({ ...keyEdit, admin_number: freeNumber })}>Posar el primer lliure ({freeNumber})</button>}
           <button className="cancel-btn" onClick={() => { setKeyEdit(null); setError(""); }}><X size={16} /> Cancel·lar</button>
         </div>}
+        {keyEdit && <p className="hint">Escriu el número d'armari que vulguis o fes servir el primer lliure{freeNumber ? ` (${freeNumber})` : ""}. Es grava en aquesta finca en prémer «Guardar».</p>}
         <p className="hint">El núm. d'administració només serveix per al control de claus (és el número de l'armari). Quan la finca es dona de baixa, queda lliure.</p>
       </Panel>
       <div className="key-status">

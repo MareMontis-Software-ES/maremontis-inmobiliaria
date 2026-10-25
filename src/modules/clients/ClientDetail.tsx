@@ -64,6 +64,8 @@ interface Props {
   showErrors: boolean;
   saving: boolean;
   onEdit: () => void;
+  /** Entra a modificar el client partint d'aquestes dades (p. ex. amb un cònjuge nou ja afegit) */
+  onEditWith: (f: ClientFull) => void;
   onSave: () => void;
   onCancel: () => void;
   onToggleStatus: () => void;
@@ -129,7 +131,7 @@ export function ClientDetail(p: Props) {
         {needsFinca && (finca || p.propertyId === "new") && (
           <div className={"finca-context" + (finca?.status === "baixa" ? " finca-context-off" : "")}><House size={15} /> Finca seleccionada: <strong>{p.propertyId === "new" ? "nova" : finca!.address}</strong>
             {finca?.status === "baixa" && <strong className="txt-off"> · DONADA DE BAIXA</strong>}
-            {finca && <small className="muted"> · {finca.features.contract ? `Contracte ${finca.features.contract}: ${FEATURE_LABELS.filter(([k]) => finca.features[k]).map(([, l]) => l).join(", ") || "cap servei"}` : "Sense tipus de contracte (tots els serveis)"}</small>}
+            {finca && <small className="muted"> · {finca.features.contract ? `Contracte ${finca.features.contract}: ${[...FEATURE_LABELS.filter(([k]) => finca.features[k]).map(([, l]) => l), ...finca.features.others].join(", ") || "cap servei"}` : "Sense tipus de contracte (tots els serveis)"}</small>}
           </div>
         )}
       </div>
@@ -167,7 +169,8 @@ export function ClientDetail(p: Props) {
               : <ClientData full={p.full} addressLine={addressLine} />
           ) : p.tab === "conjuge" ? (
             p.propertyId === "new" ? <div className="tab-pad"><Empty>Grava primer la finca nova.</Empty></div>
-              : <RelatedTab full={shown} finca={finca!} editing={editing} onChange={p.onDraft} />
+              : <RelatedTab full={shown} finca={finca!} editing={editing} onChange={p.onDraft}
+                  onStartEdit={p.canWrite && c.status === "active" ? p.onEditWith : undefined} />
           ) : (
             <VehiclesTab full={shown} editing={editing} onChange={p.onDraft} />
           )}
