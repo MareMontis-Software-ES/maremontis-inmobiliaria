@@ -1,5 +1,5 @@
 // Informe de revisió en PDF (per imprimir o adjuntar al correu): capçalera de la finca,
-// lectures, alarma/calefacció, estat de cada element (els de mal estat destacats),
+// lectures, instal·lacions (aigua, llum, gas, alarma, calefacció), estat de cada element (els de mal estat destacats),
 // observacions i fotos de la revisió. jsPDF es carrega només quan es fa servir.
 import { fmtDate } from "../../lib/format";
 import { REV_DINSFORA, REV_ESTAT, revisionIssues, type CaseRow, type Photo, type Revision } from "../../data/cases";
@@ -99,13 +99,20 @@ export async function buildRevisionPdf({ c, r, prev, responsibleName, photos }: 
   doc.text(`Data de lectura: ${fmtDate(r.reading_date) || "—"}`, M, y + 3);
   doc.setTextColor(0); y += 8;
 
-  // --- Alarma i calefacció
+  // --- Instal·lacions (OFF/ON i Bé / Mal)
+  const st = (k: string) => { const v = r.items.find(i => i.key === k)?.state; return v === "mal" ? "MAL ESTAT" : v === "bon" ? "Bé" : "—"; };
+  const inst = [
+    { cells: ["Aigua", onoff(r.water_on), st("water"), r.items.find(i => i.key === "water")?.notes || "", r.items.find(i => i.key === "water")?.notify ? "Sí" : ""] },
+    { cells: ["Llum", onoff(r.power_on), st("power"), r.items.find(i => i.key === "power")?.notes || "", r.items.find(i => i.key === "power")?.notify ? "Sí" : ""] },
+    { cells: ["Gas", onoff(r.gas_on), st("gas"), r.items.find(i => i.key === "gas")?.notes || "", r.items.find(i => i.key === "gas")?.notify ? "Sí" : ""] },
+    { cells: ["Alarma", onoff(r.alarm_on), st("alarm"), r.alarm_notes || "", r.alarm_notify ? "Sí" : ""] },
+    { cells: ["Calefacció / A.C.", onoff(r.heating_on), st("heating"), r.heating_notes || "", r.heating_notify ? "Sí" : ""] },
+  ];
   autoTable(doc, { ...table, startY: y,
-    head: [["", "OFF/ON", "Observacions", "Avisar"]],
-    body: [["Alarma", onoff(r.alarm_on), r.alarm_notes || "", r.alarm_notify ? "Sí" : ""],
-           ["Calefacció / A.C.", onoff(r.heating_on), r.heating_notes || "", r.heating_notify ? "Sí" : ""]],
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 30 }, 1: { cellWidth: 18 }, 3: { cellWidth: 16 } },
-    didParseCell: d => { if (d.section === "body" && d.cell.raw !== undefined && ((d.row.index === 0 && r.alarm_notify) || (d.row.index === 1 && r.heating_notify))) { d.cell.styles.fillColor = RED_BG; d.cell.styles.textColor = RED; } } });
+    head: [["", "OFF/ON", "Estat", "Observacions", "Avisar"]],
+    body: inst.map(x => x.cells),
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 30 }, 1: { cellWidth: 18 }, 2: { cellWidth: 24 }, 4: { cellWidth: 16 } },
+    didParseCell: d => { const c = inst[d.row.index]?.cells; if (d.section === "body" && c && (c[2] === "MAL ESTAT" || c[4])) { d.cell.styles.fillColor = RED_BG; d.cell.styles.textColor = RED; } } });
   y = lastY() + 6;
 
   // --- Estat de cada element
@@ -115,9 +122,10 @@ export async function buildRevisionPdf({ c, r, prev, responsibleName, photos }: 
     d.extra === "encarregar" && v ? "CAL ENCARREGAR" : d.extra === "falta_sal" && v ? "FALTA SAL" : d.extra === "caducitat" && v ? `Caduca ${String(v).split("-").reverse().join("/")}` : "";
   const rows: { cells: string[]; bad: boolean }[] = [
     ...REV_DINSFORA.map(d => { const it = item(d.key); const where = [it?.dins && "Dins", it?.fora && "Fora"].filter(Boolean).join(" i ");
-      return { cells: [d.label, where ? `A revisar (${where.toLowerCase()})` : "Bé", it?.notes || "", it?.notify ? "Sí" : ""], bad: !!where }; }),
+      const bad = !!where || it?.state === "mal";
+      return { cells: [d.label, bad ? `MAL ESTAT${where ? ` (${where.toLowerCase()})` : ""}` : it?.state === "bon" ? "Bé" : "—", it?.notes || "", it?.notify ? "Sí" : ""], bad }; }),
     ...REV_ESTAT.map(d => { const it = item(d.key); const ex = extraTxt(d, it?.extra);
-      return { cells: [d.label, it?.state === "mal" ? "MAL ESTAT" : it?.state === "bon" ? "Bon estat" : "—", [ex, it?.notes].filter(Boolean).join(" · "), it?.notify ? "Sí" : ""],
+      return { cells: [d.label, it?.state === "mal" ? "MAL ESTAT" : it?.state === "bon" ? "Bé" : "—", [ex, it?.notes].filter(Boolean).join(" · "), it?.notify ? "Sí" : ""],
         bad: it?.state === "mal" || !!ex }; }),
   ];
   autoTable(doc, { ...table, startY: y,

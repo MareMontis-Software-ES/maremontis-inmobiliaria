@@ -7,7 +7,7 @@ import { Empty, Notice, Panel } from "../../components/ui";
 import { errorText } from "../../lib/supabase";
 import { fmtDate } from "../../lib/format";
 import { EQ_LABEL, EXTERIOR, getCase, getEquipment, INTERIOR, listRevisions, mailContext, markRevisionMail, newRevision, plannedDates, readingsText,
-  REV_DINSFORA, REV_ESTAT, revisionIssues, saveEquipment, saveRevision, seasonOf, uploadPhoto, listPhotos, deletePhoto, renamePhoto,
+  REV_DINSFORA, REV_ESTAT, REV_INSTAL, revisionIssues, revisionProgress, saveEquipment, saveRevision, seasonOf, uploadPhoto, listPhotos, deletePhoto, renamePhoto,
   type CaseRow, type EqDef, type Equip, type Photo, type Revision, type RevItem } from "../../data/cases";
 import { listIndustrialsFull, type Industrial } from "../../data/admin";
 import { profilePick } from "../../data/global";
@@ -139,6 +139,8 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
   const [mail, setMail] = useState<null | { to: string; cc: string; subject: string; body: string; who: "responsible" | "owner"; from: string; note?: string }>(null);
   const [pending, setPending] = useState<PendingPhoto[]>([]);
   const [busyPdf, setBusyPdf] = useState(false);
+  const [revPhotos, setRevPhotos] = useState<Photo[]>([]);
+  const [photoKey, setPhotoKey] = useState(0);
   const formRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(""); const [ok, setOk] = useState("");
 
@@ -166,6 +168,8 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
 
   async function save() {
     if (!cur) return;
+    const { done, total } = revisionProgress(cur);
+    if (done < total && !window.confirm(`Falten ${total - done} element(s) per marcar com a Bé o Mal (es veuen amb una ratlla taronja). Gravar igualment?`)) return;
     let id: string;
     try { id = await saveRevision(cur); }
     catch (e) { setError("No s'ha pogut desar: " + errorText(e)); return; }
@@ -245,16 +249,35 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
     finally { setBusyPdf(false); }
   }
 
-  const allGood = () => setCur(r => ({ ...r!, items: [...REV_DINSFORA, ...REV_ESTAT].map(d => {
+  const allGood = () => setCur(r => ({ ...r!, items: [...REV_INSTAL, ...REV_DINSFORA, ...REV_ESTAT].map(d => {
     const it = r!.items.find(i => i.key === d.key) || { key: d.key, notes: "", notify: false, state: "" as const };
-    return d.kind === "estat" && !it.state ? { ...it, state: "bon" as const } : it;
+    return !it.state && !it.dins && !it.fora ? { ...it, state: "bon" as const } : it;
   }) }));
+  // Bé / Mal a cada fila; «Mal» també queda marcat si s'ha triat Dins o Fora
+  const markCells = (key: string) => { const it = item(key); const bad = it.state === "mal" || !!it.dins || !!it.fora; return <>
+    <td className="rev-opt"><Chip label="Bé" tone="good" on={it.state === "bon"} disabled={ro} onChange={v => setItem(key, v ? { state: "bon", dins: false, fora: false } : { state: "" })} /></td>
+    <td className="rev-opt"><Chip label="Mal" tone="bad" on={bad} disabled={ro} onChange={v => setItem(key, v ? { state: "mal" } : { state: "", dins: false, fora: false })} /></td>
+  </>; };
+  const rowCls = (key: string, warn = false) => { const it = item(key); const marked = !!it.state || !!it.dins || !!it.fora;
+    return "rev-item" + (it.state === "mal" || it.dins || it.fora || warn ? " rev-bad" : "") + (editing && !marked ? " rev-todo" : ""); };
+  // foto lligada a l'element: el nom de la foto és el de l'element
+  const photoHead = editing && canWrite ? <th>Foto</th> : null;
+  const photoCount = (label: string) => (cur?.id ? revPhotos : pending).filter(p => p.description === label || p.description.startsWith(label + " ")).length;
+  const photoCell = (label: string) => editing && canWrite ? <td className="rev-photo"><ItemPhoto count={photoCount(label)} onFiles={f => addItemPhotos(label, f)} /></td> : null;
+  async function addItemPhotos(label: string, list: FileList | null) {
+    const files = Array.from(list || []); // es copia ara: el selector es buida just després
+    if (!files.length || !cur) return;
+    if (!cur.id) { const add = files.map(f => ({ file: f, url: URL.createObjectURL(f), description: label })); setPending(p => [...p, ...add]); return; }
+    try { for (const f of files) await uploadPhoto(c.id, cur.id, f, label); setPhotoKey(k => k + 1); }
+    catch (e) { setError("No s'ha pogut pujar la foto: " + errorText(e)); }
+  }
+  const progress = cur ? revisionProgress(cur) : { done: 0, total: 0 };
   const cancel = () => { setEditing(false); clearPending(); setCur(cur?.id ? rows!.find(r => r.id === cur.id)! : null); };
 
   return (
     <div className="tab-pad">
       {error && <Notice kind="error">{error}</Notice>}{ok && <Notice kind="ok">{ok}</Notice>}
-      <div className="rev-layout">
+      <div className={"rev-layout" + (editing ? " editing" : "")}>
         <Panel title="Revisions ja fetes" icon={ClipboardCheck}
           action={canWrite && !editing && <span className="h3-actions"><button className="add-small" onClick={() => start(false)}><Plus size={13} /> Nova revisió</button><button className="add-small alt" onClick={() => start(true)} title="Fora de la planificació">+ Complementària</button></span>}>
           {!rows ? <Empty>Carregant…</Empty> : !rows.length ? <Empty>Encara no s'ha fet cap revisió.</Empty> : (
@@ -293,67 +316,78 @@ function RevisionsTab({ c, canWrite, userId, onChanged }: { c: CaseRow; canWrite
                 {(eqObs.ext || eqObs.int) && <div className="obs-box small"><strong>Observacions de les fitxes:</strong>{eqObs.ext && <div>Exterior: {eqObs.ext}</div>}{eqObs.int && <div>Interior: {eqObs.int}</div>}</div>}
 
                 <table className="rev-table">
-                  <thead><tr><th></th><th>OFF/ON</th><th>Lectura anterior</th><th>Lectura actual</th><th>Núm. comptador</th></tr></thead>
+                  <thead><tr><th></th><th>Lectura anterior</th><th>Lectura actual</th><th>Núm. comptador</th></tr></thead>
                   <tbody>
                     {(["water", "power", "gas"] as const).map(k => {
                       const L = { water: "Aigua", power: "Llum", gas: "Gas" }[k];
                       const prev = prevReading(k);
                       return (
                         <tr key={k} className="rev-reading"><th>{L}</th>
-                          <td className="rev-onoff"><Toggle on={cur[`${k}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_on`]: v })} /></td>
                           <td className="muted" data-l="Anterior">{prev || "—"}</td>
                           <td data-l="Lectura actual"><input inputMode="decimal" value={cur[`${k}_reading`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_reading`]: e.target.value })} /></td>
                           <td data-l="Núm. comptador"><input value={cur[`${k}_meter`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_meter`]: e.target.value })} /></td>
                         </tr>);
                     })}
-                    <tr className="rev-reading"><th>Data lectura</th><td colSpan={4}><input type="date" value={cur.reading_date} readOnly={ro} onChange={e => setCur({ ...cur, reading_date: e.target.value })} /> <small className="muted">(per a totes)</small></td></tr>
+                    <tr className="rev-reading"><th>Data lectura</th><td colSpan={3}><input type="date" value={cur.reading_date} readOnly={ro} onChange={e => setCur({ ...cur, reading_date: e.target.value })} /> <small className="muted">(per a totes)</small></td></tr>
                   </tbody>
                 </table>
 
+                {editing && <div className="rev-allgood"><button type="button" className="outline-btn" onClick={allGood}><CheckCheck size={16} /> Marcar com a «Bé» tot el que falta</button></div>}
                 <table className="rev-table">
-                  <thead><tr><th></th><th>OFF/ON</th><th colSpan={2}>Observacions</th><th>Avisar</th></tr></thead>
-                  <tbody>
-                    {([["alarm", "Alarma"], ["heating", "Calefacció / A.C."]] as const).map(([k, L]) => (
-                      <tr key={k} className={"rev-item" + (cur[`${k}_notify`] ? " rev-bad" : "")}><th>{L}</th><td className="rev-onoff"><Toggle on={cur[`${k}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_on`]: v })} /></td>
-                        <td colSpan={2} className="rev-notes"><input placeholder="Observacions" value={cur[`${k}_notes`]} readOnly={ro} onChange={e => setCur({ ...cur, [`${k}_notes`]: e.target.value })} /></td>
-                        <td className="rev-notify"><Chip label="Avisar" tone="warn" on={cur[`${k}_notify`]} disabled={ro} onChange={v => setCur({ ...cur, [`${k}_notify`]: v })} /></td></tr>))}
-                  </tbody>
+                  <thead><tr><th>Instal·lacions</th><th>OFF/ON</th><th>Bé</th><th>Mal</th><th>Observacions</th><th>Avisar</th>{photoHead}</tr></thead>
+                  <tbody>{REV_INSTAL.map(d => {
+                    const own = d.key === "alarm" || d.key === "heating" ? d.key : null; // observacions i avisar en columnes pròpies
+                    const it = item(d.key);
+                    const notes = own ? cur[`${own}_notes`] : it.notes, notify = own ? cur[`${own}_notify`] : it.notify;
+                    return (
+                      <tr key={d.key} className={rowCls(d.key, notify) + " rev-inst"}><th>{d.label}</th>
+                        <td className="rev-onoff"><Toggle on={cur[`${d.key}_on`]} disabled={ro} onChange={v => setCur({ ...cur, [`${d.key}_on`]: v })} /></td>
+                        {markCells(d.key)}
+                        <td className="rev-notes"><input placeholder="Observacions" value={notes} readOnly={ro} onChange={e => own ? setCur({ ...cur, [`${own}_notes`]: e.target.value }) : setItem(d.key, { notes: e.target.value })} /></td>
+                        <td className="rev-notify"><Chip label="Avisar" tone="warn" on={notify} disabled={ro} onChange={v => own ? setCur({ ...cur, [`${own}_notify`]: v }) : setItem(d.key, { notify: v })} /></td>
+                        {photoCell(d.label)}</tr>); })}</tbody>
                 </table>
 
                 <table className="rev-table">
-                  <thead><tr><th></th><th>Dins</th><th>Fora</th><th>Observacions</th><th>Avisar</th></tr></thead>
+                  <thead><tr><th>Pintura i parets</th><th>Bé</th><th>Mal</th><th>On · observacions</th><th>Avisar</th>{photoHead}</tr></thead>
                   <tbody>{REV_DINSFORA.map(d => { const it = item(d.key); return (
-                    <tr key={d.key} className={"rev-item" + (it.dins || it.fora ? " rev-bad" : "")}><th>{d.label}</th>
-                      <td className="rev-opt"><Chip label="Dins" tone="bad" on={!!it.dins} disabled={ro} onChange={v => setItem(d.key, { dins: v })} /></td>
-                      <td className="rev-opt"><Chip label="Fora" tone="bad" on={!!it.fora} disabled={ro} onChange={v => setItem(d.key, { fora: v })} /></td>
-                      <td className="rev-notes"><input placeholder="Observacions" value={it.notes} readOnly={ro} onChange={e => setItem(d.key, { notes: e.target.value })} /></td>
-                      <td className="rev-notify"><Chip label="Avisar" tone="warn" on={it.notify} disabled={ro} onChange={v => setItem(d.key, { notify: v })} /></td></tr>); })}</tbody>
+                    <tr key={d.key} className={rowCls(d.key, it.notify)}><th>{d.label}</th>
+                      {markCells(d.key)}
+                      <td className="rev-obs rev-notes">
+                        <span className="rev-dinsfora">
+                          <Chip label="Dins" tone="bad" on={!!it.dins} disabled={ro} onChange={v => setItem(d.key, { dins: v, ...(v ? { state: "mal" as const } : {}) })} />
+                          <Chip label="Fora" tone="bad" on={!!it.fora} disabled={ro} onChange={v => setItem(d.key, { fora: v, ...(v ? { state: "mal" as const } : {}) })} />
+                        </span>
+                        <input placeholder="Observacions" value={it.notes} readOnly={ro} onChange={e => setItem(d.key, { notes: e.target.value })} />
+                      </td>
+                      <td className="rev-notify"><Chip label="Avisar" tone="warn" on={it.notify} disabled={ro} onChange={v => setItem(d.key, { notify: v })} /></td>
+                      {photoCell(d.label)}</tr>); })}</tbody>
                 </table>
 
-                {editing && <div className="rev-allgood"><button type="button" className="outline-btn" onClick={allGood}><CheckCheck size={16} /> Marcar com a «Bon» tot el que falta</button></div>}
                 <table className="rev-table">
-                  <thead><tr><th></th><th>Bon</th><th>Mal</th><th>Observacions</th><th>Avisar</th></tr></thead>
+                  <thead><tr><th>Estat de la casa</th><th>Bé</th><th>Mal</th><th>Observacions</th><th>Avisar</th>{photoHead}</tr></thead>
                   <tbody>{REV_ESTAT.map(d => { const it = item(d.key); return (
-                    <tr key={d.key} className={"rev-item" + (it.state === "mal" ? " rev-bad" : "")}><th>{d.label}</th>
-                      <td className="rev-opt"><Chip label="Bon" tone="good" on={it.state === "bon"} disabled={ro} onChange={v => setItem(d.key, { state: v ? "bon" : "" })} /></td>
-                      <td className="rev-opt"><Chip label="Mal" tone="bad" on={it.state === "mal"} disabled={ro} onChange={v => setItem(d.key, { state: v ? "mal" : "" })} /></td>
+                    <tr key={d.key} className={rowCls(d.key, it.notify || !!it.extra)}><th>{d.label}</th>
+                      {markCells(d.key)}
                       <td className="rev-obs rev-notes">
                         {d.extra === "encarregar" && <Chip label="Encarregar" tone="warn" on={!!it.extra} disabled={ro} onChange={v => setItem(d.key, { extra: v })} />}
                         {d.extra === "falta_sal" && <Chip label="Falta sal" tone="warn" on={!!it.extra} disabled={ro} onChange={v => setItem(d.key, { extra: v })} />}
                         {d.extra === "caducitat" && <label className="chk-inline">Caducitat <input type="month" value={typeof it.extra === "string" ? it.extra : ""} readOnly={ro} onChange={e => setItem(d.key, { extra: e.target.value })} /></label>}
                         <input placeholder="Observacions" value={it.notes} readOnly={ro} onChange={e => setItem(d.key, { notes: e.target.value })} />
                       </td>
-                      <td className="rev-notify"><Chip label="Avisar" tone="warn" on={it.notify} disabled={ro} onChange={v => setItem(d.key, { notify: v })} /></td></tr>); })}</tbody>
+                      <td className="rev-notify"><Chip label="Avisar" tone="warn" on={it.notify} disabled={ro} onChange={v => setItem(d.key, { notify: v })} /></td>
+                      {photoCell(d.label)}</tr>); })}</tbody>
                 </table>
                 <label className="f f-wide"><span>Altres observacions</span><textarea rows={3} value={cur.other_observations} readOnly={ro} onChange={e => setCur({ ...cur, other_observations: e.target.value })} /></label>
                 {editing && !cur.id && <PendingPhotos items={pending} onChange={setPending} />}
               </div>
               {editing && <div className="rev-savebar">
+                <span className={"rev-progress" + (progress.done < progress.total ? " todo" : "")}>{progress.done < progress.total ? `Marcats ${progress.done} de ${progress.total}` : "Tot marcat ✓"}</span>
                 <button className="save-btn" onClick={save}><Save size={18} /> Gravar{pending.length ? ` (+${pending.length} foto${pending.length > 1 ? "s" : ""})` : " revisió"}</button>
                 <button className="cancel-btn" onClick={cancel}><X size={18} /> Cancel·lar</button>
               </div>}
             </section>
-            {cur.id && editing && <PhotosPanel propertyId={c.id} revisionId={cur.id} canWrite={canWrite} title="Fotos de la revisió" />}
+            {cur.id && editing && <PhotosPanel propertyId={c.id} revisionId={cur.id} canWrite={canWrite} title="Fotos de la revisió" refreshKey={photoKey} onLoaded={setRevPhotos} />}
 
             {cur.id && !editing && (
               <>
@@ -406,13 +440,13 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean
 // =====================================================================
 // Fotos amb nom descriptiu
 // =====================================================================
-function PhotosPanel({ propertyId, revisionId, canWrite, title }: { propertyId: string; revisionId: string | null; canWrite: boolean; title: string }) {
+function PhotosPanel({ propertyId, revisionId, canWrite, title, refreshKey, onLoaded }: { propertyId: string; revisionId: string | null; canWrite: boolean; title: string; refreshKey?: number; onLoaded?: (rows: Photo[]) => void }) {
   const [rows, setRows] = useState<Photo[] | null>(null);
   const [desc, setDesc] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const load = () => listPhotos(propertyId, revisionId).then(setRows).catch(e => { setRows([]); setError(errorText(e)); });
-  useEffect(() => { void load(); }, [propertyId, revisionId]);
+  const load = () => listPhotos(propertyId, revisionId).then(r => { setRows(r); onLoaded?.(r); }).catch(e => { setRows([]); setError(errorText(e)); });
+  useEffect(() => { void load(); }, [propertyId, revisionId, refreshKey]);
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
@@ -457,6 +491,21 @@ function PhotoPicker({ desc, setDesc, busy, onFiles }: { desc: string; setDesc: 
       <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={e => pick(e.target)} />
       <input ref={gal} type="file" accept="image/*" multiple hidden onChange={e => pick(e.target)} />
     </div>
+  );
+}
+
+/** Botons petits de foto a cada element de la revisió: càmera de la tauleta o galeria */
+function ItemPhoto({ count, onFiles }: { count: number; onFiles: (f: FileList | null) => void }) {
+  const cam = useRef<HTMLInputElement>(null), gal = useRef<HTMLInputElement>(null);
+  const pick = (el: HTMLInputElement) => { onFiles(el.files); el.value = ""; };
+  return (
+    <span className="item-photo">
+      <button type="button" className="ph-btn" title="Fer foto amb la càmera" onClick={() => cam.current?.click()}><Camera size={15} /><span>Foto</span></button>
+      <button type="button" className="ph-btn" title="Triar fotos de la galeria" onClick={() => gal.current?.click()}><Images size={15} /><span>Galeria</span></button>
+      {count > 0 && <span className="ph-count" title="Fotos d'aquest element">{count}</span>}
+      <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={e => pick(e.target)} />
+      <input ref={gal} type="file" accept="image/*" multiple hidden onChange={e => pick(e.target)} />
+    </span>
   );
 }
 
