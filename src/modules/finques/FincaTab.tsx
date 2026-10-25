@@ -7,7 +7,7 @@ import { Notice, Panel } from "../../components/ui";
 import { STREET_TYPES } from "../../lib/constants";
 import { errorText } from "../../lib/supabase";
 import { fmtDate } from "../../lib/format";
-import { adminNumberTaken, clientPickList, getProperty, lookups, nextFreeAdminNumber, propertyGroups, saveProperty, setPropertyBaixa, type Owner, type PropertyForm } from "../../data/finques";
+import { adminNumberTaken, clientPickList, getProperty, KEY_FIELDS, lookups, nextFreeAdminNumber, propertyGroups, saveProperty, setPropertyBaixa, type Owner, type PropertyForm } from "../../data/finques";
 import type { ClientFull } from "../../types";
 import { recoverProperty } from "../../data/baixes";
 import { HistoryButton } from "../../components/HistoryButton";
@@ -54,7 +54,8 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
     }
   }, [propertyId]);
 
-  const groups = useMemo(() => propertyGroups(lk.zones, lk.contractTypes, STREET_TYPES), [lk]);
+  // El núm. d'administració i l'oficina de la clau es veuen i es canvien a la pestanya Claus
+  const groups = useMemo(() => propertyGroups(lk.zones, lk.contractTypes, STREET_TYPES).map(g => ({ ...g, fields: g.fields.filter(f => !KEY_FIELDS.includes(f.k)) })), [lk]);
   const total = owners.reduce((a, o) => a + (Number(o.percentage) || 0), 0);
 
   if (!form) return <div className="tab-pad">{error ? <Notice kind="error">{error}</Notice> : <p className="empty-line">Carregant finca…</p>}</div>;
@@ -67,12 +68,15 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
 
   async function save() {
     setError("");
-    if (errors.admin_number || errors.address) { setError("Revisa els camps obligatoris."); return; }
+    if (errors.address) { setError("Revisa els camps obligatoris."); return; }
     if (!owners.length) { setError("La finca ha de tenir almenys un titular."); return; }
     setSaving(true);
     try {
       const used = await adminNumberTaken(Number(form!.admin_number), form!.id);
-      if (used) { setError(`El núm. d'administració ${form!.admin_number} ja l'usa la finca «${used}». El primer lliure és el ${await nextFreeAdminNumber()}.`); return; }
+      if (used) {
+        if (!isNew) { setError(`El núm. d'administració ${form!.admin_number} ja l'usa la finca «${used}». Canvia'l a la pestanya Claus.`); return; }
+        form!.admin_number = await nextFreeAdminNumber(); // alta: s'agafa el primer armari lliure
+      }
       const id = await saveProperty(form!, owners);
       setEditing(false);
       onSaved(id);
@@ -103,7 +107,7 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
   }
 
   // Possibles titulars: el client, el seu cònjuge/copropietaris, o qualsevol altre client
-  const relatedOptions = client.related.filter(r => r.id).map(r => ({ id: r.id!, name: `${r.first_name} ${r.last_name}`.trim() + (r.relation === "conjuge" ? " (cònjuge)" : " (copropietari)") }));
+  const relatedOptions = client.related.filter(r => r.id && (!r.property_id || r.property_id === propertyId)).map(r => ({ id: r.id!, name: `${r.first_name} ${r.last_name}`.trim() + (r.relation === "conjuge" ? " (cònjuge)" : " (copropietari)") }));
   function addOwner(value: string) {
     if (!value) return;
     const [kind, id] = value.split(":");
@@ -124,14 +128,14 @@ export function FincaTab({ client, propertyId, canWrite, userId, onSaved, onCanc
             <>
               <button className="save-btn" onClick={() => setEditing(true)}><Pencil size={16} /> Modificar finca</button>
               <button className="cancel-btn" onClick={toggleBaixa}><Power size={16} /> {form.status === "baixa" ? "Recuperar finca" : "Donar de baixa la finca"}</button>
-              {form.id && <HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.admin_number} ${form.address}`} />}
+              {form.id && <HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.address}`} />}
             </>
           )}
         </div>
       )}
-      {!canWrite && form.id && <div className="tab-actions"><HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.admin_number} ${form.address}`} /></div>}
+      {!canWrite && form.id && <div className="tab-actions"><HistoryButton scope={{ propertyId: form.id, tables: ["properties", "property_owners"] }} title={`Historial de canvis · finca ${form.address}`} /></div>}
       {form.status === "baixa" && <Notice kind="error">Finca <strong>donada de baixa</strong> el {fmtDate(form.baixa_date)}. Es conserva per a l'històric i el model 210.</Notice>}
-      {isNew && <Notice>Alta de finca nova per a aquest client. El núm. d'administració proposat és el primer armari lliure.</Notice>}
+      {isNew && <Notice>Alta de finca nova per a aquest client. Se li assigna el primer armari de claus lliure; es pot canviar a la pestanya Claus.</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
 
       <div className="finca-columns">

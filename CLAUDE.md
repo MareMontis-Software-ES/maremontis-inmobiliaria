@@ -51,3 +51,4 @@ supabase/esborrar_dades_prova.sql  esborra les dades d'exemple («DADES DE PROVA
 6. ~~Que el tipus de contracte amagui les funcions que no inclou~~ (fet: `contractFeatures()` a `src/data/admin.ts`; sense contracte, tot habilitat).
 7. Migració de les dades reals del programa antic.
 8. ~~Provar la pujada de fotos amb el Supabase real~~ (permisos del bucket `fotos` provats; falta una prova des d'un mòbil real).
+9. Reanomenar les taules existents amb el prefix `admi_` (les noves ja el porten) — pas a part, toca tot el programa.

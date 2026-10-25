@@ -2,9 +2,15 @@
 //   capçalera = client + les seves finques (es tria la finca amb un clic)
 //   pestanyes = Client · Finca · Impostos · Claus · Cònjuge · Matrícules · (Revisions · Incidències)
 //   lateral   = alertes, visibles des de qualsevol pestanya
-import { AlertTriangle, CalendarDays, Car, ChevronLeft, ChevronRight, ContactRound, House, KeyRound, Landmark, Mail, MapPin, Pencil, Phone, Plus, Power, UserRound, Users, X } from "lucide-react";
-import { accountCode, fmtDate, fullName } from "../../lib/format";
-import { EMAIL_TYPES, LANGUAGES, PHONE_TYPES } from "../../lib/constants";
+// La capçalera i les pestanyes queden fixes a dalt; només es mou el contingut.
+// «Modificar client» edita les dades dins la mateixa pestanya (Client, Cònjuge, Matrícules)
+// i es grava o cancel·la des de la barra de baix.
+import { AlertTriangle, CalendarDays, Car, ChevronLeft, ChevronRight, Copy, ContactRound, House, KeyRound, Landmark, Mail, MapPin, Pencil, Phone, Plus, Power, Save, UserRound, Users, X } from "lucide-react";
+import { fmtDate, fullName } from "../../lib/format";
+import { COUNTRIES, EMAIL_TYPES, PHONE_TYPES } from "../../lib/constants";
+import { useLanguages } from "../../data/settings";
+import { ClientForm } from "./ClientForm";
+import { RelatedTab, VehiclesTab } from "./RelatedTabs";
 import { Empty, Info2, Notice, Panel } from "../../components/ui";
 import { AlertsPanel } from "../alerts/AlertsPanel";
 import { FincaTab } from "../finques/FincaTab";
@@ -20,7 +26,7 @@ export const CLIENT_TABS = [
   ["finca", "Finca", House, true],
   ["impostos", "Impostos", Landmark, true],
   ["claus", "Claus", KeyRound, true],
-  ["conjuge", "Cònjuge - copropietaris", Users, false],
+  ["conjuge", "Cònjuge - copropietaris", Users, true],
   ["matricules", "Matrícules", Car, false],
   ["revisions", "Revisions", CalendarDays, true],
   ["incidencies", "Incidències", AlertTriangle, false],
@@ -51,8 +57,15 @@ interface Props {
   propertyId: string | null | "new";
   onTab: (t: ClientTab) => void;
   onSelectProperty: (id: string | "new") => void;
-  onPropertySaved: (id: string) => void;
+  onPropertySaved: (id: string, tab?: ClientTab) => void;
+  editing: boolean;
+  draft: ClientFull | null;
+  onDraft: (f: ClientFull) => void;
+  showErrors: boolean;
+  saving: boolean;
   onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
   onToggleStatus: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -64,65 +77,72 @@ export function ClientDetail(p: Props) {
   const responsible = p.responsibles.find(r => r.id === c.responsible_id);
   const addressLine = [a.street_type, a.street_name, a.street_number].filter(Boolean).join(" ");
   const finca = p.propertyId && p.propertyId !== "new" ? p.properties.find(h => h.id === p.propertyId) || null : null;
-  const fincaTabs: ClientTab[] = ["finca", "impostos", "claus", "revisions"];
+  const fincaTabs: ClientTab[] = ["finca", "impostos", "claus", "conjuge", "revisions"];
   const needsFinca = fincaTabs.includes(p.tab);
   // Amb una finca triada, les pestanyes de serveis que el seu contracte no inclou s'amaguen
   const excluded = (t: ClientTab) => { const f = TAB_FEATURE[t]; return !!finca && !!f && !finca.features[f[0]]; };
   const notIncluded = excluded(p.tab) ? TAB_FEATURE[p.tab]![1] : null;
+  const editing = p.editing && !!p.draft;
+  const shown = editing ? p.draft! : p.full;
 
   return (
     <div className="work-area">
-      {/* ---------- Capçalera: client + les seves finques ---------- */}
-      <section className="record-banner client-banner">
-        <div className="record-summary">
-          <div className="record-number">{accountCode(c.client_code)}
-            <span className={"record-state" + (c.status === "inactive" ? " state-off" : "")}>{c.status === "inactive" ? "BAIXA" : c.resident ? "RESIDENT" : "NO RESIDENT"}</span>
+      {/* ---------- Capçalera fixa: client + les seves finques + pestanyes ---------- */}
+      <div className="ficha-head">
+        <section className="record-banner client-banner">
+          <div className="record-summary">
+            <div className="record-number"><span title="Codi client">{c.client_code}</span>{c.account_code && <small className="account-code" title="Subcompte">{c.account_code}</small>}
+              <span className={"record-state" + (c.status === "inactive" ? " state-off" : "")}>{c.status === "inactive" ? "BAIXA" : c.resident ? "RESIDENT" : "NO RESIDENT"}</span>
+            </div>
+            <div><b>Client</b><strong>{[c.title, c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}</strong></div>
+            <div><b>Telèfon</b><strong>{p.full.phones.find(x => x.phone_number) ? `${p.full.phones[0].country_prefix} ${p.full.phones[0].phone_number}` : "—"}</strong></div>
+            <div><b>Responsable</b><strong>{responsible ? responsible.full_name || responsible.email : "Sense assignar"}</strong></div>
           </div>
-          <div><b>Client</b><strong>{[c.title, c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}</strong></div>
-          <div><b>Telèfon</b><strong>{p.full.phones.find(x => x.phone_number) ? `${p.full.phones[0].country_prefix} ${p.full.phones[0].phone_number}` : "—"}</strong></div>
-          <div><b>Responsable</b><strong>{responsible ? responsible.full_name || responsible.email : "Sense assignar"}</strong></div>
+          <div className="banner-fincas">
+            <div className="banner-fincas-head">
+              <strong>Finques del client ({p.properties.length})</strong>
+              {p.canWrite && c.status === "active" && !editing && <button className="banner-add" onClick={() => p.onSelectProperty("new")}><Plus size={14} /> Nova finca</button>}
+            </div>
+            <div className="banner-fincas-list">
+              {p.properties.map(h => (
+                <button type="button" key={h.id}
+                  className={"finca-chip" + (p.propertyId === h.id ? " on" : "") + (h.status === "baixa" ? " off" : "")}
+                  title={h.status === "baixa" ? "Finca donada de baixa" : undefined}
+                  onClick={() => p.onSelectProperty(h.id)}>
+                  <span className="finca-num"><House size={15} /></span>
+                  <span className="finca-addr">{h.address}<small>{h.municipality}{h.ownership_percentage != null && h.ownership_percentage < 100 ? ` · ${h.ownership_percentage}%` : ""}{h.status === "baixa" ? " · DE BAIXA" : ""}</small></span>
+                </button>
+              ))}
+              {p.propertyId === "new" && <div className="finca-chip on"><span className="finca-num">+</span><span className="finca-addr">Finca nova<small>pendent de gravar</small></span></div>}
+              {!p.properties.length && p.propertyId !== "new" && <span className="banner-empty">Encara no té finques{p.canWrite ? ". Prem «Nova finca»." : "."}</span>}
+            </div>
+          </div>
+        </section>
+
+        <div className="record-tabs">
+          {CLIENT_TABS.filter(([id]) => !excluded(id) || id === p.tab).map(([id, text, Icon, perFinca]) => (
+            <button key={id} className={p.tab === id ? "selected" : ""} onClick={() => p.onTab(id)} title={perFinca ? "De la finca seleccionada" : undefined}>
+              <Icon size={17} /><span>{text}</span>
+            </button>
+          ))}
         </div>
-        <div className="banner-fincas">
-          <div className="banner-fincas-head">
-            <strong>Finques del client ({p.properties.length})</strong>
-            {p.canWrite && c.status === "active" && <button className="banner-add" onClick={() => p.onSelectProperty("new")}><Plus size={14} /> Nova finca</button>}
+        {needsFinca && (finca || p.propertyId === "new") && (
+          <div className={"finca-context" + (finca?.status === "baixa" ? " finca-context-off" : "")}><House size={15} /> Finca seleccionada: <strong>{p.propertyId === "new" ? "nova" : finca!.address}</strong>
+            {finca?.status === "baixa" && <strong className="txt-off"> · DONADA DE BAIXA</strong>}
+            {finca && <small className="muted"> · {finca.features.contract ? `Contracte ${finca.features.contract}: ${FEATURE_LABELS.filter(([k]) => finca.features[k]).map(([, l]) => l).join(", ") || "cap servei"}` : "Sense tipus de contracte (tots els serveis)"}</small>}
           </div>
-          <div className="banner-fincas-list">
-            {p.properties.map(h => (
-              <button type="button" key={h.id}
-                className={"finca-chip" + (p.propertyId === h.id ? " on" : "") + (h.status === "baixa" ? " off" : "")}
-                onClick={() => p.onSelectProperty(h.id)}>
-                <span className="finca-num">{h.admin_number}</span>
-                <span className="finca-addr">{h.address}<small>{h.municipality}{h.ownership_percentage != null && h.ownership_percentage < 100 ? ` · ${h.ownership_percentage}%` : ""}{h.status === "baixa" ? " · BAIXA" : ""}</small></span>
-              </button>
-            ))}
-            {p.propertyId === "new" && <div className="finca-chip on"><span className="finca-num">+</span><span className="finca-addr">Finca nova<small>pendent de gravar</small></span></div>}
-            {!p.properties.length && p.propertyId !== "new" && <span className="banner-empty">Encara no té finques{p.canWrite ? ". Prem «Nova finca»." : "."}</span>}
-          </div>
-        </div>
-      </section>
+        )}
+      </div>
 
       {p.error && <Notice kind="error">{p.error}</Notice>}
+      {editing && <Notice>Modificant el client: canvia el que calgui a les pestanyes Client, Cònjuge - copropietaris i Matrícules, i prem «Guardar» a baix.</Notice>}
 
       <div className="detail-layout">
         <div className="detail-main">
-          <div className="record-tabs">
-            {CLIENT_TABS.filter(([id]) => !excluded(id) || id === p.tab).map(([id, text, Icon, perFinca]) => (
-              <button key={id} className={p.tab === id ? "selected" : ""} onClick={() => p.onTab(id)} title={perFinca ? "De la finca seleccionada" : undefined}>
-                <Icon size={17} /><span>{text}</span>
-              </button>
-            ))}
-          </div>
-          {needsFinca && (finca || p.propertyId === "new") && (
-            <div className="finca-context"><House size={15} /> Finca seleccionada: <strong>{p.propertyId === "new" ? "nova" : `${finca!.admin_number} · ${finca!.address}`}</strong>
-              {finca && <small className="muted"> · {finca.features.contract ? `Contracte ${finca.features.contract}: ${FEATURE_LABELS.filter(([k]) => finca.features[k]).map(([, l]) => l).join(", ") || "cap servei"}` : "Sense tipus de contracte (tots els serveis)"}</small>}
-            </div>
-          )}
-
           {needsFinca && !finca && p.propertyId !== "new" ? (
             <div className="tab-pad"><Panel title="Tria una finca" icon={House}>
               <Empty>{p.properties.length ? "Selecciona una de les finques del client a la capçalera." : "Aquest client encara no té cap finca."}</Empty>
-              {p.canWrite && !p.properties.length && <button className="save-btn" onClick={() => p.onSelectProperty("new")}><Plus size={16} /> Donar d'alta una finca</button>}
+              {p.canWrite && !p.properties.length && !editing && <button className="save-btn" onClick={() => p.onSelectProperty("new")}><Plus size={16} /> Donar d'alta una finca</button>}
             </Panel></div>
           ) : notIncluded ? (
             <div className="tab-pad"><Panel title="No inclòs al contracte" icon={House}>
@@ -136,41 +156,20 @@ export function ClientDetail(p: Props) {
               : <TaxesTab propertyId={finca!.id} ownership={finca!.ownership_percentage} canWrite={p.canWrite} />
           ) : p.tab === "claus" ? (
             p.propertyId === "new" ? <div className="tab-pad"><Empty>Grava primer la finca nova.</Empty></div>
-              : <KeysTab propertyId={finca!.id} keyOffice="" canWrite={p.canWrite} userId={p.userId} />
+              : <KeysTab propertyId={finca!.id} canWrite={p.canWrite} userId={p.userId} onSaved={() => p.onPropertySaved(finca!.id, "claus")} />
           ) : p.tab === "revisions" ? (
             p.propertyId === "new" ? <div className="tab-pad"><Empty>Grava primer la finca nova.</Empty></div>
               : <div className="tab-pad"><CaseView propertyId={finca!.id} canWrite={p.canWrite} userId={p.userId || ""} /></div>
           ) : p.tab === "incidencies" ? (
             <div className="tab-pad"><IncidentsView canWrite={p.canWrite} userId={p.userId || ""} clientId={c.id} propertyId={finca?.id || null} /></div>
           ) : p.tab === "client" ? (
-            <ClientData full={p.full} addressLine={addressLine} />
+            editing ? <div className="tab-pad"><ClientForm value={p.draft!} onChange={p.onDraft} responsibles={p.responsibles} isNew={false} showErrors={p.showErrors} /></div>
+              : <ClientData full={p.full} addressLine={addressLine} />
           ) : p.tab === "conjuge" ? (
-            <div className="tab-pad related-grid">
-              {!p.full.related.length && <Panel title="Cònjuge i copropietaris" icon={Users}><Empty>No n'hi ha cap. Afegeix-los amb «Modificar client».</Empty></Panel>}
-              {p.full.related.map((r, i) => (
-                <Panel key={r.id || i} title={r.relation === "conjuge" ? "Cònjuge" : "Copropietari"} icon={Users}>
-                  <Info2 label="Nom" value={[r.title, r.first_name, r.last_name].filter(Boolean).join(" ")} />
-                  <Info2 label="% propietat" value={r.ownership_percentage && r.ownership_percentage + " %"} />
-                  <Info2 label="Naixement" value={[fmtDate(r.birth_date), r.birth_city, r.birth_country_code].filter(Boolean).join(" · ")} />
-                  <Info2 label="Passaport" value={r.passport && `${r.passport}${r.passport_expiry ? " · cad. " + fmtDate(r.passport_expiry) : ""}`} />
-                  <Info2 label="N.I.E. / D.N.I." value={[r.nie, r.dni].filter(Boolean).join(" / ")} />
-                  <Info2 label="Adreça" value={[r.street, [r.postal_code, r.municipality].filter(Boolean).join(" "), r.province, r.country].filter(Boolean).join(", ")} />
-                  <Info2 label="Telèfons" value={r.phones.filter(x => x.number).map(x => `${x.prefix} ${x.number}`).join(" · ")} />
-                  <Info2 label="E-mails" value={r.emails.filter(x => x.email).map(x => x.email).join(" · ")} />
-                </Panel>
-              ))}
-            </div>
+            p.propertyId === "new" ? <div className="tab-pad"><Empty>Grava primer la finca nova.</Empty></div>
+              : <RelatedTab full={shown} finca={finca!} editing={editing} onChange={p.onDraft} />
           ) : (
-            <div className="tab-pad">
-              <Panel title="Vehicles" icon={Car}>
-                {p.full.vehicles.length ? (
-                  <table className="mini-table">
-                    <thead><tr><th>Vehicle</th><th>Marca</th><th>Model</th><th>Matrícula</th><th>ITV</th></tr></thead>
-                    <tbody>{p.full.vehicles.map((v, i) => <tr key={i}><td>{v.vehicle}</td><td>{v.brand}</td><td>{v.model}</td><td><strong>{v.plate}</strong></td><td>{fmtDate(v.itv_date)}</td></tr>)}</tbody>
-                  </table>
-                ) : <Empty>Sense vehicles. Afegeix-los amb «Modificar client».</Empty>}
-              </Panel>
-            </div>
+            <VehiclesTab full={shown} editing={editing} onChange={p.onDraft} />
           )}
         </div>
 
@@ -181,15 +180,17 @@ export function ClientDetail(p: Props) {
 
       <div className="bottom-bar">
         <div>
-          {p.canWrite && <button className="save-btn" onClick={p.onEdit}><Pencil size={17} /> Modificar client</button>}
-          {p.canWrite && <button className="cancel-btn" onClick={p.onToggleStatus}><Power size={17} /> {c.status === "inactive" ? "Reactivar client" : "Donar de baixa client"}</button>}
+          {p.canWrite && <button className="save-btn" onClick={p.onEdit} disabled={editing}><Pencil size={17} /> Modificar client</button>}
+          {p.canWrite && <button className="cancel-btn" onClick={p.onToggleStatus} disabled={editing}><Power size={17} /> {c.status === "inactive" ? "Reactivar client" : "Donar de baixa client"}</button>}
           {c.id && <HistoryButton scope={{ clientId: c.id }} title={`Historial de canvis · ${fullName(c.first_name, c.last_name)}`} />}
-          <button className="cancel-btn" onClick={p.onBack}><X size={17} /> Tornar a la llista</button>
+          <button className="cancel-btn" onClick={p.onBack} disabled={editing}><X size={17} /> Tornar a la llista</button>
+          {p.canWrite && <button className="save-btn btn-save-main" onClick={p.onSave} disabled={!editing || p.saving}><Save size={17} /> {p.saving ? "Desant…" : "Guardar"}</button>}
+          {p.canWrite && <button className="cancel-btn" onClick={p.onCancel} disabled={!editing || p.saving}><X size={17} /> Cancel·lar</button>}
         </div>
         <div>
-          <button className="cancel-btn" onClick={p.onPrev} disabled={p.position.index <= 0}><ChevronLeft size={18} /> Anterior</button>
+          <button className="cancel-btn" onClick={p.onPrev} disabled={editing || p.position.index <= 0}><ChevronLeft size={18} /> Anterior</button>
           <span className="pos-label">{p.position.index + 1} / {p.position.total}</span>
-          <button className="cancel-btn" onClick={p.onNext} disabled={p.position.index >= p.position.total - 1}>Següent <ChevronRight size={18} /></button>
+          <button className="cancel-btn" onClick={p.onNext} disabled={editing || p.position.index >= p.position.total - 1}>Següent <ChevronRight size={18} /></button>
         </div>
       </div>
     </div>
@@ -198,31 +199,44 @@ export function ClientDetail(p: Props) {
 
 function ClientData({ full, addressLine }: { full: ClientFull; addressLine: string }) {
   const { client: c, address: a } = full;
+  const languages = useLanguages();
+  const country = (code: string) => COUNTRIES.find(x => x.code === code)?.name || code;
   return (
-    <div className="record-grid">
-      <div className="column-stack">
-        <Panel title="Dades identificatives" icon={UserRound}>
-          <Info2 label="Codi client" value={`${c.client_code} (${accountCode(c.client_code)})`} />
+    <div className="tab-pad client-data">
+      <Panel title="Dades identificatives" icon={UserRound}>
+        <div className="info-cols">
           <Info2 label="Tractament" value={c.title} />
           <Info2 label="Nom complet" value={fullName(c.first_name, c.last_name)} />
-          <Info2 label="Inicials" value={c.initials} />
           <Info2 label="Nom reduït" value={c.short_name} />
           <Info2 label="Tipus" value={c.client_type === "empresa" ? "Empresa" : "Particular"} />
           <Info2 label="D.N.I." value={c.dni} />
           <Info2 label="N.I.E." value={c.nie} />
           <Info2 label="Passaport" value={c.passport && `${c.passport}${c.passport_expiry ? " · cad. " + fmtDate(c.passport_expiry) : ""}`} />
           <Info2 label="Autorització" value={c.authorization_ok ? "Sí" : "No"} />
+        </div>
+      </Panel>
+      <div className="client-edit-row">
+        <Panel title="Adreça" icon={MapPin} action={addressLine && <button className="outline-btn small" onClick={() => window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent([addressLine, a.postal_code, a.municipality, a.country].filter(Boolean).join(", ")), "_blank", "noopener,noreferrer")}><MapPin size={14} /> Veure al mapa</button>}>
+          <div className="info-cols">
+            <Info2 label="Adreça" value={addressLine} />
+            <Info2 label="Bloc / urb." value={a.extra} />
+            <Info2 label="C.P. i població" value={[a.postal_code, a.municipality].filter(Boolean).join(" ")} />
+            <Info2 label="Província" value={a.province} />
+            <Info2 label="País" value={[a.country, a.country_code && `(${a.country_code})`].filter(Boolean).join(" ")} />
+          </div>
         </Panel>
-        <Panel title="Adreça" icon={MapPin}>
-          <Info2 label="Adreça" value={addressLine} />
-          <Info2 label="Bloc / urb." value={a.extra} />
-          <Info2 label="C.P. i població" value={[a.postal_code, a.municipality].filter(Boolean).join(" ")} />
-          <Info2 label="Província" value={a.province} />
-          <Info2 label="País" value={[a.country, a.country_code && `(${a.country_code})`].filter(Boolean).join(" ")} />
-          {addressLine && <button className="outline-btn small" onClick={() => window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent([addressLine, a.postal_code, a.municipality, a.country].filter(Boolean).join(", ")), "_blank", "noopener,noreferrer")}><MapPin size={14} /> Veure al mapa</button>}
+        <Panel title="Altres dades personals" icon={Users}>
+          <div className="info-cols">
+            <Info2 label="Idioma" value={label(languages, c.language)} />
+            <Info2 label="Nacionalitat" value={c.nationality} />
+            <Info2 label="Data naixement" value={fmtDate(c.birth_date)} />
+            <Info2 label="Ciutat naixement" value={c.birth_city} />
+            <Info2 label="País naixement" value={country(c.birth_country_code)} />
+            <Info2 label="Anagrama" value={c.anagram} />
+          </div>
         </Panel>
       </div>
-      <div className="column-stack">
+      <div className="client-edit-row">
         <Panel title="Telèfons" icon={Phone}>
           {full.phones.filter(x => x.phone_number).length
             ? full.phones.filter(x => x.phone_number).map((x, i) => <Info2 key={i} label={label(PHONE_TYPES, x.phone_type)} value={<>{x.country_prefix} {x.phone_number}{x.notes && <small className="muted"> · {x.notes}</small>}</>} />)
@@ -234,20 +248,11 @@ function ClientData({ full, addressLine }: { full: ClientFull; addressLine: stri
             : <Empty>Sense e-mails.</Empty>}
         </Panel>
       </div>
-      <div className="column-stack">
-        <Panel title="Altres dades personals" icon={Users}>
-          <Info2 label="Idioma" value={label(LANGUAGES, c.language)} />
-          <Info2 label="Nacionalitat" value={c.nationality} />
-          <Info2 label="Data naixement" value={fmtDate(c.birth_date)} />
-          <Info2 label="Ciutat naixement" value={c.birth_city} />
-          <Info2 label="C.P. país naix." value={c.birth_country_code} />
-          <Info2 label="Anagrama" value={c.anagram} />
-        </Panel>
-        <Panel title="Documental i observacions" icon={ContactRound}>
-          <Info2 label="Ruta documental" value={c.documents_path && <code className="path">{c.documents_path}</code>} />
-          <div className="obs-box">{c.observations || <em>Sense observacions.</em>}</div>
-        </Panel>
-      </div>
+      <Panel title="Documental i observacions" icon={ContactRound}>
+        <Info2 label="Carpeta a l'ordinador" value={c.documents_path && <span className="path-line"><code className="path">{c.documents_path}</code>
+          <button className="link-btn" title="Copiar la ruta per enganxar-la a l'explorador de fitxers" onClick={() => void navigator.clipboard?.writeText(c.documents_path)}><Copy size={13} /> Copiar</button></span>} />
+        <div className="obs-box">{c.observations || <em>Sense observacions.</em>}</div>
+      </Panel>
     </div>
   );
 }

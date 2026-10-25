@@ -70,3 +70,29 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 5. **Enviament de correu sense obrir Outlook** (amb fotos adjuntes) → cal un servei de correu (p. ex. el compte SMTP de l'empresa o Resend) i una funció al servidor.
 6. ~~**Tipus de contracte que habiliten funcions**~~ → fet. Queda pendent quan existeixin les funcions de visites i rebuts.
 7. **Migració de les dades reals** del programa antic (DBF) → importació inicial de clients, finques, impostos, incidències i historial.
+
+## Canvis del document «cambios programa INMO» (25/10/2026)
+
+| Punt | Programa nou | Estat |
+|---|---|---|
+| Alta client sense cònjuge ni matrícules | L'alta només demana les dades del client; cònjuge/copropietaris i matrícules s'afegeixen a les pestanyes de la fitxa | ✅ |
+| Ruta de la carpeta a l'ordinador | Camp «Ruta de la carpeta a l'ordinador» a Documental i observacions, amb botó «Copiar» a la fitxa | ✅ |
+| Editar a la mateixa pestanya | «Modificar client» edita dins la fitxa (pestanyes Client, Cònjuge - copropietaris i Matrícules); «Guardar» i «Cancel·lar» a la barra de baix | ✅ |
+| Capçalera fixa | Capçalera del client, finques i pestanyes queden fixes; només es mou el contingut. El menú lateral també queda fix | ✅ |
+| Finca de baixa en vermell | A la capçalera de la fitxa, a la franja «Finca seleccionada» i a la llista de clients | ✅ |
+| Inicials / nom reduït | Només «Nom reduït» | ✅ |
+| Codi client i subcompte a mà | Sense número per defecte; el codi només surt a l'alta i a la capçalera (no a la llista ni a la pestanya Client). Subcompte escrit a mà (`clients.account_code` deixa de ser calculat) | ✅ |
+| Desplegables d'alta | Nacionalitat, província, país i país de naixement; codi postal ↔ població s'omplen sols | ✅ |
+| Formularis horitzontals | Dades del client en 4 columnes i panells a l'ample | ✅ |
+| Fletxes a la llista de clients | ↑ ↓ per moure's, Retorn per obrir | ✅ |
+| Lloguer | Desplegable «Lloguer vacacional» / «Lloguer urbà» | ✅ |
+| Núm. d'administració i oficina de la clau | Només a la pestanya Claus (armari + oficina: Torroella de Montgrí, L'Estartit, L'Escala, Pals); ja no surt a la pestanya Finca ni a la capçalera | ✅ |
+| Cònjuge / copropietaris per finca | Cada finca té els seus (`client_related_persons.property_id`); els antics sense finca surten a totes amb «Assignar només a aquesta finca» | ✅ |
+| Impostos | Sense «Exercici» ni «Any nou»: mostra l'any de treball; dues columnes de dos panells i observacions a baix | ✅ |
+| Canvi d'any | Configuració → Canvi d'any (crea els impostos del nou any copiant l'anterior). Funció `admi_change_year` | ✅ |
+| Tipus de contracte i industrials | Botó «Esborrar» només si no s'usen (contracte assignat a cap finca; industrial sense claus, incidències, notes ni equipaments); si no, avís | ✅ |
+| Permisos per rol | Configuració → Permisos per rol: veure / crear / modificar / esborrar per apartat del menú (`admi_role_permissions`). Ho aplica la pantalla; la base de dades continua limitant per rol (RLS) | ✅ |
+| Idiomes | Configuració → Idiomes: afegir, treure (si cap client el té) o desactivar (`admi_languages`) | ✅ |
+| Còpies de seguretat | Automàtiques (cada dia o setmana, a l'hora triada, pg_cron) i manuals, en SQL per a l'SQL Editor, amb data i hora; es guarden les 30 últimes automàtiques (`admi_backups`, `admi_run_backup`). També en Excel | ✅ |
+| Logo | Logo MareMontis a dalt del menú | ✅ |
+| Prefix `admi_` a les taules | Les taules noves ja el porten. Reanomenar les existents queda per a un pas a part | ⏳ |

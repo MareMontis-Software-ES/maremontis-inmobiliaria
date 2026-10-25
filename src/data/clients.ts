@@ -10,17 +10,17 @@ export const emptyAddress = () => ({
   postal_code: "", municipality: "", province: "", country: "Espanya", country_code: "ES",
 });
 
-export const emptyRelated = (relation: RelatedPerson["relation"] = "copropietari"): RelatedPerson => ({
-  relation, title: "", first_name: "", last_name: "", birth_date: "", birth_city: "", birth_country_code: "",
+export const emptyRelated = (relation: RelatedPerson["relation"] = "copropietari", propertyId = ""): RelatedPerson => ({
+  property_id: propertyId, relation, title: "", first_name: "", last_name: "", birth_date: "", birth_city: "", birth_country_code: "",
   passport: "", passport_expiry: "", nie: "", dni: "", labels: false, anagram: "", ownership_percentage: "",
   street: "", postal_code: "", municipality: "", province: "", country: "",
   phones: [{ type: "mobil", prefix: "+34", number: "" }], emails: [{ type: "particular", email: "" }],
 });
 
-export function emptyClient(nextCode = ""): ClientFull {
+export function emptyClient(): ClientFull {
   return {
     client: {
-      client_code: nextCode, title: "Sr.", sex: "", initials: "", first_name: "", last_name: "", short_name: "",
+      client_code: "", account_code: "", title: "Sr.", sex: "", initials: "", first_name: "", last_name: "", short_name: "",
       client_type: "particular", dni: "", nie: "", passport: "", passport_expiry: "", language: "",
       nationality: "", birth_date: "", birth_city: "", birth_country_code: "", anagram: "",
       resident: false, authorization_ok: false, responsible_id: "", documents_path: "", observations: "",
@@ -88,7 +88,7 @@ export async function getClient(id: string): Promise<{ full: ClientFull; propert
   const bySort = (a: Row, b: Row) => (a.sort_order ?? 0) - (b.sort_order ?? 0);
   const full: ClientFull = {
     client: {
-      id: c.id, client_code: s(c.client_code), title: s(c.title), sex: s(c.sex), initials: s(c.initials),
+      id: c.id, client_code: s(c.client_code), account_code: s(c.account_code), title: s(c.title), sex: s(c.sex), initials: s(c.initials),
       first_name: s(c.first_name), last_name: s(c.last_name), short_name: s(c.short_name),
       client_type: s(c.client_type) || "particular", dni: s(c.dni), nie: s(c.nie), passport: s(c.passport),
       passport_expiry: s(c.passport_expiry), language: s(c.language), nationality: s(c.nationality),
@@ -107,7 +107,7 @@ export async function getClient(id: string): Promise<{ full: ClientFull; propert
     })),
     emails: (c.client_emails || []).sort(bySort).map((e: Row) => ({ email_type: e.email_type, email: s(e.email) })),
     related: (c.client_related_persons || []).sort(bySort).map((r: Row) => ({
-      id: r.id, relation: r.relation, title: s(r.title), first_name: s(r.first_name), last_name: s(r.last_name),
+      id: r.id, property_id: s(r.property_id), relation: r.relation, title: s(r.title), first_name: s(r.first_name), last_name: s(r.last_name),
       birth_date: s(r.birth_date), birth_city: s(r.birth_city), birth_country_code: s(r.birth_country_code),
       passport: s(r.passport), passport_expiry: s(r.passport_expiry), nie: s(r.nie), dni: s(r.dni),
       labels: !!r.labels, anagram: s(r.anagram), ownership_percentage: s(r.ownership_percentage),
@@ -131,14 +131,16 @@ export async function saveClient(full: ClientFull): Promise<string> {
   return data as string;
 }
 
-export async function nextClientCode(): Promise<string> {
-  const { data, error } = await supabase.rpc("next_client_code");
-  if (error) throw error;
-  return String(data ?? "");
-}
-
 export async function isClientCodeTaken(code: number, exceptId?: string): Promise<boolean> {
   let q = supabase.from("clients").select("id").eq("client_code", code);
+  if (exceptId) q = q.neq("id", exceptId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data || []).length > 0;
+}
+
+export async function isAccountCodeTaken(code: string, exceptId?: string): Promise<boolean> {
+  let q = supabase.from("clients").select("id").eq("account_code", code);
   if (exceptId) q = q.neq("id", exceptId);
   const { data, error } = await q;
   if (error) throw error;

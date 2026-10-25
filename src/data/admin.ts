@@ -97,3 +97,34 @@ export async function saveTemplate(t: Template) {
   const { error } = t.id ? await supabase.from("email_templates").update(row).eq("id", t.id) : await supabase.from("email_templates").insert(row);
   if (error) throw error;
 }
+
+// ---------------- Esborrar (només si no s'usa enlloc) ----------------
+async function countWhere(table: string, column: string, id: string): Promise<number> {
+  const { count, error } = await supabase.from(table).select("id", { count: "exact", head: true }).eq(column, id);
+  if (error) throw error;
+  return count || 0;
+}
+
+/** Esborra un tipus de contracte si cap finca (ni de baixa) el té assignat. Retorna el motiu si no es pot. */
+export async function deleteContractType(id: string): Promise<string | null> {
+  const n = await countWhere("properties", "contract_type_id", id);
+  if (n) return `No es pot esborrar: està assignat a ${n} finca${n > 1 ? "s" : ""} de clients. Canvia-los el contracte primer o desmarca «Actiu».`;
+  const { error } = await supabase.from("contract_types").delete().eq("id", id);
+  if (error) throw error;
+  return null;
+}
+
+/** Esborra un industrial si no té cap treball fet o per fer (claus, incidències, notes de servei, equipaments). */
+export async function deleteIndustrial(id: string): Promise<string | null> {
+  const uses: [string, string, string][] = [
+    ["key_movements", "delivered_to_industrial_id", "entregues de claus"], ["incidents", "industrial_id", "incidències"],
+    ["service_notes", "industrial_id", "notes de servei"], ["service_notes", "industrial_alt_id", "notes de servei (2a opció)"],
+    ["property_equipment", "industrial_id", "equipaments de cases"],
+  ];
+  const found: string[] = [];
+  for (const [t, c, l] of uses) { const n = await countWhere(t, c, id); if (n) found.push(`${n} ${l}`); }
+  if (found.length) return `No es pot esborrar: té treballs fets o per fer (${found.join(", ")}). Pots desmarcar «Actiu» perquè no surti als desplegables.`;
+  const { error } = await supabase.from("industrials").delete().eq("id", id);
+  if (error) throw error;
+  return null;
+}

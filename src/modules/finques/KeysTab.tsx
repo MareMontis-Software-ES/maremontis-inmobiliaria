@@ -1,14 +1,36 @@
-// Pestanya «Claus»: control d'entregues i retorns de la clau de la finca (PDF pàg. 7 i PDF 2).
+// Pestanya «Claus»: clau de la finca (núm. d'administració = armari, i oficina on es guarda)
+// i control d'entregues i retorns (PDF pàg. 7 i PDF 2).
 import { useEffect, useState } from "react";
-import { Check, KeyRound, Plus, RotateCcw, X } from "lucide-react";
+import { Check, KeyRound, Pencil, Plus, RotateCcw, Save, X } from "lucide-react";
 import { Empty, Notice, Panel } from "../../components/ui";
-import { createKeyMove, listIndustrials, listKeyMoves, returnKey, type KeyMove } from "../../data/finques";
+import { adminNumberTaken, createKeyMove, getPropertyKey, listIndustrials, listKeyMoves, nextFreeAdminNumber, returnKey, savePropertyKey, type KeyMove } from "../../data/finques";
+import { KEY_OFFICES } from "../../lib/constants";
 import { errorText } from "../../lib/supabase";
 import { addDaysISO, fmtDate, todayISO } from "../../lib/format";
 
 const blank = () => ({ delivered_at: todayISO(), industrial_id: "", delivered_to: "", reason: "", observations: "", expected_return: addDaysISO(todayISO(), 7) });
 
-export function KeysTab({ propertyId, keyOffice, canWrite, userId }: { propertyId: string; keyOffice: string; canWrite: boolean; userId?: string }) {
+export function KeysTab({ propertyId, canWrite, userId, onSaved }: { propertyId: string; canWrite: boolean; userId?: string; onSaved?: () => void }) {
+  const [key, setKey] = useState<{ admin_number: string; key_office: string; status: string } | null>(null);
+  const [keyEdit, setKeyEdit] = useState<{ admin_number: string; key_office: string } | null>(null);
+  useEffect(() => { setKeyEdit(null); getPropertyKey(propertyId).then(setKey).catch(e => setError(errorText(e))); }, [propertyId]);
+  const keyOffice = key?.key_office || "";
+
+  async function saveKey() {
+    if (!keyEdit) return;
+    const n = Number(keyEdit.admin_number);
+    if (!/^\d+$/.test(keyEdit.admin_number) || n <= 0) { setError("El núm. d'administració ha de ser un número."); return; }
+    setError("");
+    try {
+      if (key?.status !== "baixa") {
+        const used = await adminNumberTaken(n, propertyId);
+        if (used) { setError(`L'armari ${n} ja l'usa la finca «${used}». El primer lliure és el ${await nextFreeAdminNumber()}.`); return; }
+      }
+      await savePropertyKey(propertyId, n, keyEdit.key_office);
+      setKey({ ...key!, ...keyEdit }); setKeyEdit(null); onSaved?.();
+    } catch (e) { setError(errorText(e)); }
+  }
+
   const [rows, setRows] = useState<KeyMove[] | null>(null);
   const [inds, setInds] = useState<[string, string][]>([]);
   const [adding, setAdding] = useState(false);
@@ -29,11 +51,28 @@ export function KeysTab({ propertyId, keyOffice, canWrite, userId }: { propertyI
   return (
     <div className="tab-pad">
       {error && <Notice kind="error">{error}</Notice>}
+      <Panel title="Clau de la finca" icon={KeyRound}
+        action={canWrite && key && !keyEdit && <button className="outline-btn small" onClick={() => setKeyEdit({ admin_number: key.admin_number, key_office: key.key_office })}><Pencil size={13} /> Modificar</button>}>
+        <div className="form-grid four">
+          <label className="f"><span>Núm. d'administració (armari)</span>
+            <input type="number" min={1} value={keyEdit ? keyEdit.admin_number : key?.admin_number || ""} readOnly={!keyEdit} onChange={e => setKeyEdit({ ...keyEdit!, admin_number: e.target.value })} /></label>
+          <label className="f"><span>Oficina on es guarda la clau</span>
+            <select value={keyEdit ? keyEdit.key_office : keyOffice} disabled={!keyEdit} onChange={e => setKeyEdit({ ...keyEdit!, key_office: e.target.value })}>
+              <option value="">—</option>
+              {[...(keyOffice && !KEY_OFFICES.includes(keyOffice) ? [keyOffice] : []), ...KEY_OFFICES].map(o => <option key={o} value={o}>{o}</option>)}
+            </select></label>
+        </div>
+        {keyEdit && <div className="tab-actions inline">
+          <button className="save-btn" onClick={saveKey}><Save size={16} /> Guardar</button>
+          <button className="cancel-btn" onClick={() => { setKeyEdit(null); setError(""); }}><X size={16} /> Cancel·lar</button>
+        </div>}
+        <p className="hint">El núm. d'administració només serveix per al control de claus (és el número de l'armari). Quan la finca es dona de baixa, queda lliure.</p>
+      </Panel>
       <div className="key-status">
         <KeyRound size={22} />
         {out
           ? <div><strong className={out.overdue ? "txt-warn" : ""}>Clau fora de l'oficina{out.overdue ? " — FORA DE TERMINI" : ""}</strong><span>Entregada a {out.industrial || out.delivered_to || "—"} el {fmtDate(out.delivered_at)} · retorn previst {fmtDate(out.expected_return)}</span></div>
-          : <div><strong>Clau a l'oficina</strong><span>{keyOffice ? `Oficina: ${keyOffice}` : "Indica a la pestanya Finca quina oficina té la clau."}</span></div>}
+          : <div><strong>Clau a l'oficina</strong><span>{keyOffice ? `Oficina: ${keyOffice}${key?.admin_number ? ` · armari ${key.admin_number}` : ""}` : "Indica aquí a dalt a quina oficina es guarda la clau."}</span></div>}
         {canWrite && !adding && <button className="save-btn" onClick={() => { setF(blank()); setAdding(true); }}><Plus size={16} /> Nova entrega</button>}
       </div>
 
