@@ -10,22 +10,25 @@ export interface ContractType {
   id?: string; description: string; price: string; num_revisions: string;
   includes_revisions: boolean; includes_rent_210: boolean; includes_visits: boolean;
   includes_key_custody: boolean; includes_receipts: boolean; active: boolean; uses?: number;
+  /** Altres opcions incloses, amb el text escrit a mà */
+  other_services: string[];
 }
 export const CONTRACT_FLAGS: [keyof ContractType, string][] = [
   ["includes_revisions", "Revisió immoble"], ["includes_rent_210", "Renda Mod. 210"], ["includes_visits", "Visites"],
   ["includes_key_custody", "Custòdia de claus"], ["includes_receipts", "Rebuts"],
 ];
 /** Columnes a incrustar en una consulta de finques: `properties(..., ${CONTRACT_SELECT})` */
-export const CONTRACT_SELECT = "contract_types:admi_contract_types(description, includes_revisions, includes_rent_210, includes_visits, includes_key_custody, includes_receipts)";
+export const CONTRACT_SELECT = "contract_types:admi_contract_types(description, includes_revisions, includes_rent_210, includes_visits, includes_key_custody, includes_receipts, other_services)";
 
 /** Serveis de la finca segons el seu contracte. Sense contracte, tot habilitat (com la vista cases_overview). */
 export function contractFeatures(ct: Row | null | undefined): ContractFeatures {
-  if (!ct) return { contract: "", revisions: true, rent_210: true, visits: true, key_custody: true, receipts: true };
+  if (!ct) return { contract: "", revisions: true, rent_210: true, visits: true, key_custody: true, receipts: true, others: [] };
   return { contract: s(ct.description), revisions: !!ct.includes_revisions, rent_210: !!ct.includes_rent_210,
-    visits: !!ct.includes_visits, key_custody: !!ct.includes_key_custody, receipts: !!ct.includes_receipts };
+    visits: !!ct.includes_visits, key_custody: !!ct.includes_key_custody, receipts: !!ct.includes_receipts,
+    others: Array.isArray(ct.other_services) ? ct.other_services : [] };
 }
 
-export const emptyContractType = (): ContractType => ({ description: "", price: "", num_revisions: "", includes_revisions: true, includes_rent_210: true, includes_visits: false, includes_key_custody: true, includes_receipts: false, active: true });
+export const emptyContractType = (): ContractType => ({ description: "", price: "", num_revisions: "", includes_revisions: true, includes_rent_210: true, includes_visits: false, includes_key_custody: true, includes_receipts: false, active: true, other_services: [] });
 
 export async function listContractTypes(): Promise<ContractType[]> {
   const [ct, pr] = await Promise.all([
@@ -35,12 +38,13 @@ export async function listContractTypes(): Promise<ContractType[]> {
   if (ct.error) throw ct.error;
   const uses: Record<string, number> = {};
   (pr.data || []).forEach((p: Row) => { uses[p.contract_type_id] = (uses[p.contract_type_id] || 0) + 1; });
-  return (ct.data || []).map((c: Row) => ({ ...c, price: s(c.price), num_revisions: s(c.num_revisions), uses: uses[c.id] || 0 }) as ContractType);
+  return (ct.data || []).map((c: Row) => ({ ...c, price: s(c.price), num_revisions: s(c.num_revisions), uses: uses[c.id] || 0, other_services: c.other_services || [] }) as ContractType);
 }
 export async function saveContractType(c: ContractType) {
   const row = { description: c.description.trim(), price: Number(c.price || 0), num_revisions: Number(c.num_revisions || 0),
     includes_revisions: c.includes_revisions, includes_rent_210: c.includes_rent_210, includes_visits: c.includes_visits,
-    includes_key_custody: c.includes_key_custody, includes_receipts: c.includes_receipts, active: c.active };
+    includes_key_custody: c.includes_key_custody, includes_receipts: c.includes_receipts, active: c.active,
+    other_services: c.other_services.map(x => x.trim()).filter(Boolean) };
   const { error } = c.id ? await supabase.from("admi_contract_types").update(row).eq("id", c.id) : await supabase.from("admi_contract_types").insert(row);
   if (error) throw error;
 }

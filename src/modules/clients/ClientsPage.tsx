@@ -266,6 +266,7 @@ function ClientFicha({ id, request, clients, responsibles, canWrite, userId, onN
       onSelectProperty={p => { setPropertyId(p); if (p === "new" || tab === "client" || tab === "matricules") setTab("finca"); }}
       onPropertySaved={async (p, t) => { try { await load(id!); } catch (e) { setError(errorText(e)); } void onListChanged(); setPropertyId(p); setTab(t || "finca"); }}
       onEdit={() => startEdit(current.full)}
+      onEditWith={startEdit}
       onSave={handleSave}
       onCancel={handleCancel}
       onToggleStatus={toggleStatus}

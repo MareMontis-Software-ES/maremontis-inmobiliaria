@@ -60,6 +60,8 @@ export interface ClientFull {
 export interface ContractFeatures {
   contract: string;
   revisions: boolean; rent_210: boolean; visits: boolean; key_custody: boolean; receipts: boolean;
+  /** Altres opcions del contracte, amb text lliure */
+  others: string[];
 }
 
 export interface PropertyLink {
