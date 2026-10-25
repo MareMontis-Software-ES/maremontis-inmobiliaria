@@ -1,15 +1,15 @@
 // Pantalles de manteniment: Contractes, Industrials i Configuració (usuaris, zones, textos de correu).
 // Totes segueixen el mateix patró: llista a l'esquerra, fitxa a la dreta.
 import { useEffect, useState, type ReactNode } from "react";
-import { CalendarDays, Check, Download, FileText, Gift, Languages, Mail, MapPin, Plus, Save, Server, ShieldCheck, Trash2, Users, Wrench, X } from "lucide-react";
+import { CalendarDays, Check, Download, FileText, Gift, KeyRound, Languages, Mail, MapPin, Plus, Save, Server, ShieldCheck, Trash2, UserPlus, Users, Wrench, X } from "lucide-react";
 import { CheckInput, Empty, Notice, Panel, SelectInput, TextArea, TextInput } from "../../components/ui";
-import { errorText } from "../../lib/supabase";
+import { errorText, supabase } from "../../lib/supabase";
 import { useLanguages } from "../../data/settings";
 import { BackupsTab, LanguagesTab, PermissionsTab, YearTab } from "./ConfigTabs";
 import { GreetingsTab, SmtpTab } from "./GreetingsTabs";
-import { CONTRACT_FLAGS, deleteContractType, deleteIndustrial, emptyContractType, emptyIndustrial, listContractTypes, listIndustrialsFull, listProfiles, listTemplates, listZones,
+import { CONTRACT_FLAGS, createUser, deleteContractType, emptyNewUser, MIN_PASSWORD, setUserEmail, setUserPassword, deleteIndustrial, emptyContractType, emptyIndustrial, listContractTypes, listIndustrialsFull, listProfiles, listTemplates, listZones,
   saveContractType, saveIndustrial, saveProfile, saveTemplate, saveZone, TEMPLATE_KINDS, TRADES,
-  type ContractType, type Industrial, type ProfileRow, type Template } from "../../data/admin";
+  type ContractType, type Industrial, type NewUser, type ProfileRow, type Template } from "../../data/admin";
 
 function PageHead({ kicker, title, text, action }: { kicker: string; title: string; text: string; action?: ReactNode }) {
   return <div className="page-title"><div><small>{kicker}</small><h1>{title}</h1><p>{text}</p></div>{action}</div>;
@@ -158,33 +158,92 @@ export function ConfigPage({ isAdmin }: { isAdmin: boolean }) {
 
 function UsersTab({ isAdmin }: { isAdmin: boolean }) {
   const [rows, setRows] = useState<ProfileRow[]>([]);
+  const [saved, setSaved] = useState<Record<string, boolean>>({}); // «Actiu» tal com està desat
+  const [me, setMe] = useState("");
+  const [nu, setNu] = useState<NewUser | null>(null);
+  const [edit, setEdit] = useState<{ id: string; kind: "password" | "email"; value: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
-  const load = () => listProfiles().then(setRows).catch(e => setError(errorText(e)));
-  useEffect(() => { void load(); }, []);
+  const load = () => listProfiles().then(r => { setRows(r); setSaved(Object.fromEntries(r.map(p => [p.id, p.active]))); }).catch(e => setError(errorText(e)));
+  useEffect(() => { void load(); supabase.auth.getUser().then(({ data }) => setMe(data.user?.id || "")); }, []);
   const upd = (i: number, patch: Partial<ProfileRow>) => setRows(r => r.map((x, j) => j === i ? { ...x, ...patch } : x));
+  async function run(f: () => Promise<string>, after?: () => void) {
+    setBusy(true);
+    try { setOk(await f()); setError(""); after?.(); await load(); }
+    catch (e) { setError(errorText(e)); setOk(""); }
+    finally { setBusy(false); }
+  }
+  function create() {
+    if (!nu) return;
+    if (!nu.email.includes("@")) { setError("Escriu l'e-mail del nou usuari."); setOk(""); return; }
+    if (nu.password.length < MIN_PASSWORD) { setError(`La contrasenya ha de tenir com a mínim ${MIN_PASSWORD} caràcters.`); setOk(""); return; }
+    void run(() => createUser(nu), () => setNu(null));
+  }
+  function applyEdit() {
+    if (!edit) return;
+    if (edit.kind === "password" && edit.value.length < MIN_PASSWORD) { setError(`La contrasenya ha de tenir com a mínim ${MIN_PASSWORD} caràcters.`); setOk(""); return; }
+    void run(() => edit.kind === "password" ? setUserPassword(edit.id, edit.value) : setUserEmail(edit.id, edit.value), () => setEdit(null));
+  }
+  const editing = edit && rows.find(r => r.id === edit.id);
   return (
-    <Panel title="Usuaris" icon={Users}>
+    <Panel title="Usuaris" icon={Users} action={isAdmin && !nu && <button className="outline-btn small" onClick={() => { setNu(emptyNewUser()); setEdit(null); }}><UserPlus size={13} /> Nou usuari</button>}>
       {error && <Notice kind="error">{error}</Notice>}
       {ok && <Notice kind="ok">{ok}</Notice>}
+      {nu && (
+        <div className="sub-form">
+          <strong>Nou usuari</strong>
+          <div className="form-grid">
+            <TextInput label="Nom i cognoms" value={nu.full_name} onChange={v => setNu({ ...nu, full_name: v })} />
+            <TextInput label="E-mail (és l'usuari per entrar)" type="email" value={nu.email} onChange={v => setNu({ ...nu, email: v })} required />
+            <TextInput label={`Contrasenya (mínim ${MIN_PASSWORD} caràcters)`} value={nu.password} onChange={v => setNu({ ...nu, password: v })} required />
+            <SelectInput label="Permís" value={nu.role} onChange={v => setNu({ ...nu, role: v })} options={ROLE_OPTIONS} />
+            <CheckInput label="Responsable (surt al desplegable «Responsable»)" checked={nu.is_responsible} onChange={v => setNu({ ...nu, is_responsible: v })} />
+          </div>
+          <div className="tab-actions inline">
+            <button className="save-btn" disabled={busy} onClick={create}><UserPlus size={16} /> {busy ? "Creant…" : "Crear usuari"}</button>
+            <button className="outline-btn" onClick={() => setNu(null)}><X size={16} /> Cancel·lar</button>
+          </div>
+          <p className="hint">Comunica la contrasenya a la persona; després la pot canviar un administrador des d'aquí. No s'envia cap correu.</p>
+        </div>
+      )}
       <table className="mini-table">
         <thead><tr><th>Nom</th><th>E-mail</th><th>Permís</th><th>Responsable</th><th>Actiu</th><th></th></tr></thead>
         <tbody>{rows.map((p, i) => (
           <tr key={p.id} className="no-hover">
             <td><input className="cell-input" value={p.full_name} disabled={!isAdmin} onChange={e => upd(i, { full_name: e.target.value })} /></td>
-            <td>{p.email}</td>
-            <td><select className="cell-input" value={p.role} disabled={!isAdmin} onChange={e => upd(i, { role: e.target.value })}>
-              <option value="admin">Administrador</option><option value="oficina">Oficina (crear i modificar)</option><option value="consulta">Només consulta</option></select></td>
+            <td>{p.email}{p.id === me && <small> (tu)</small>}</td>
+            <td><select className="cell-input" value={p.role} disabled={!isAdmin || p.id === me} title={p.id === me ? "No et pots treure el permís d'administrador a tu mateix" : undefined} onChange={e => upd(i, { role: e.target.value })}>
+              {ROLE_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></td>
             <td><input type="checkbox" checked={p.is_responsible} disabled={!isAdmin} onChange={e => upd(i, { is_responsible: e.target.checked })} /></td>
-            <td><input type="checkbox" checked={p.active} disabled={!isAdmin} onChange={e => upd(i, { active: e.target.checked })} /></td>
-            <td>{isAdmin && <button className="outline-btn small" onClick={async () => { try { await saveProfile(p); setOk("Desat: " + (p.full_name || p.email)); setError(""); } catch (e) { setError(errorText(e)); } }}><Check size={13} /> Desar</button>}</td>
+            <td><input type="checkbox" checked={p.active} disabled={!isAdmin || p.id === me} onChange={e => upd(i, { active: e.target.checked })} /></td>
+            <td className="row-actions">{isAdmin && <>
+              <button className="outline-btn small" disabled={busy} onClick={() => run(async () => { await saveProfile(p, saved[p.id]); return "Desat: " + (p.full_name || p.email); })}><Check size={13} /> Desar</button>
+              <button className="outline-btn small" title="Canviar la contrasenya" onClick={() => { setEdit({ id: p.id, kind: "password", value: "" }); setNu(null); }}><KeyRound size={13} /> Contrasenya</button>
+              <button className="outline-btn small" title="Canviar l'e-mail per entrar" onClick={() => { setEdit({ id: p.id, kind: "email", value: p.email }); setNu(null); }}><Mail size={13} /> E-mail</button>
+            </>}</td>
           </tr>))}
         </tbody>
       </table>
-      <p className="hint">Per afegir un usuari nou: Supabase → Authentication → Add user (o Invite). Apareixerà aquí amb permís «Només consulta» i el pots canviar.</p>
+      {edit && editing && (
+        <div className="sub-form">
+          <strong>{edit.kind === "password" ? "Contrasenya nova" : "E-mail nou"} per a {editing.full_name || editing.email}</strong>
+          <div className="form-grid">
+            <TextInput label={edit.kind === "password" ? `Contrasenya nova (mínim ${MIN_PASSWORD} caràcters)` : "E-mail (és l'usuari per entrar)"} type={edit.kind === "email" ? "email" : "text"}
+              value={edit.value} onChange={v => setEdit({ ...edit, value: v })} />
+          </div>
+          <div className="tab-actions inline">
+            <button className="save-btn" disabled={busy} onClick={applyEdit}><Save size={16} /> Canviar</button>
+            <button className="outline-btn" onClick={() => setEdit(null)}><X size={16} /> Cancel·lar</button>
+          </div>
+        </div>
+      )}
+      <p className="hint">Els usuaris no s'esborren (surten a l'historial de canvis): per treure l'accés a algú, desmarca «Actiu» i «Desar». «Oficina» pot crear i modificar; «Només consulta» només mira. Què pot veure cada permís es tria a «Permisos per rol».</p>
     </Panel>
   );
 }
+
+const ROLE_OPTIONS: [string, string][] = [["admin", "Administrador"], ["oficina", "Oficina (crear i modificar)"], ["consulta", "Només consulta"]];
 
 function ZonesTab({ isAdmin }: { isAdmin: boolean }) {
   const [rows, setRows] = useState<{ code: number; name: string }[]>([]);

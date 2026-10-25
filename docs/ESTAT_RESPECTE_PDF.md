@@ -96,6 +96,7 @@ El programa nou manté aquesta lògica (tot des del client) però unifica els do
 | Impostos | Sense «Exercici» ni «Any nou»: mostra l'any de treball; dues columnes de dos panells i observacions a baix | ✅ |
 | Canvi d'any | Configuració → Canvi d'any (crea els impostos del nou any copiant l'anterior). Funció `admi_change_year` | ✅ |
 | Tipus de contracte i industrials | Botó «Esborrar» només si no s'usen (contracte assignat a cap finca; industrial sense claus, incidències, notes ni equipaments); si no, avís | ✅ |
+| Usuaris | Configuració → Usuaris: «Nou usuari» (nom, e-mail, contrasenya, permís, responsable) sense passar per Supabase; canviar nom, permís, responsable, contrasenya i e-mail; desmarcar «Actiu» bloqueja l'entrada (no s'esborren). Un administrador no es pot treure el permís ni donar-se de baixa a si mateix. Funció del servidor `supabase/functions/admi-usuaris` (clau de servei només al servidor, només administradors) | ✅ |
 | Permisos per rol | Configuració → Permisos per rol: veure / crear / modificar / esborrar per apartat del menú (`admi_role_permissions`). Ho aplica la pantalla; la base de dades continua limitant per rol (RLS) | ✅ |
 | Idiomes | Configuració → Idiomes: afegir, treure (si cap client el té) o desactivar (`admi_languages`) | ✅ |
 | Còpies de seguretat | Automàtiques (cada dia o setmana, a l'hora triada, pg_cron) i manuals, en SQL per a l'SQL Editor, amb data i hora; es guarden les 30 últimes automàtiques (`admi_backups`, `admi_run_backup`). També en Excel | ✅ |
