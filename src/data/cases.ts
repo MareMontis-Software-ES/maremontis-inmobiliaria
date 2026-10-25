@@ -220,6 +220,20 @@ export const REV_ESTAT: RevItemDef[] = [
 ];
 export interface RevItem { key: string; dins?: boolean; fora?: boolean; state?: "bon" | "mal" | ""; notes: string; notify: boolean; extra?: string | boolean }
 
+/** Instal·lacions amb OFF/ON que també es marquen Bé / Mal. L'estat va a `items` amb aquestes claus;
+ *  les observacions i l'«avisar» de l'alarma i la calefacció són columnes pròpies de la revisió. */
+export const REV_INSTAL: { key: "water" | "power" | "gas" | "alarm" | "heating"; label: string }[] = [
+  { key: "water", label: "Aigua" }, { key: "power", label: "Llum" }, { key: "gas", label: "Gas" },
+  { key: "alarm", label: "Alarma" }, { key: "heating", label: "Calefacció / A.C." },
+];
+const ALL_KEYS = [...REV_INSTAL.map(d => d.key), ...REV_DINSFORA.map(d => d.key), ...REV_ESTAT.map(d => d.key)];
+
+/** Quants elements de la revisió ja s'han marcat Bé o Mal (per saber si el revisor s'ha deixat res) */
+export function revisionProgress(r: Revision): { done: number; total: number } {
+  const done = ALL_KEYS.filter(k => { const it = r.items.find(i => i.key === k); return !!it && (!!it.state || !!it.dins || !!it.fora); }).length;
+  return { done, total: ALL_KEYS.length };
+}
+
 export interface Revision {
   id?: string; property_id: string; revision_date: string; revision_number: string; is_extra: boolean; responsible_id: string;
   water_on: boolean; water_reading: string; water_meter: string; water_prev?: string;
@@ -254,7 +268,7 @@ function toRevision(r: Row): Revision {
 
 /** Revisió nova: la lectura anterior i els comptadors s'agafen de l'última revisió (PDF pàg. 14) */
 export function newRevision(propertyId: string, previous: Revision | undefined, meters: { water: string; power: string; gas: string }, userId: string, seasonCount: number): Revision {
-  const items: RevItem[] = [...REV_DINSFORA, ...REV_ESTAT].map(d => ({ key: d.key, state: "", dins: false, fora: false, notes: "", notify: false }));
+  const items: RevItem[] = ALL_KEYS.map(key => ({ key, state: "", dins: false, fora: false, notes: "", notify: false }));
   return {
     property_id: propertyId, revision_date: todayISO(), revision_number: String(seasonCount + 1), is_extra: false, responsible_id: userId,
     water_on: previous?.water_on ?? false, water_reading: "", water_meter: previous?.water_meter || meters.water, water_prev: previous?.water_reading || "",
@@ -297,16 +311,23 @@ export function revisionIssues(r: Revision, lang: MailLang = "ca"): string[] {
   const W = (k: keyof typeof WORD_I18N) => WORD_I18N[k][lang];
   const name = (key: string, ca: string) => (lang === "ca" ? ca : ITEM_I18N[key]?.[lang] || ca);
   const out: string[] = [];
-  if (r.alarm_notify || (r.alarm_notes && !r.alarm_on)) out.push(`${name("alarm", "Alarma")} (${r.alarm_on ? "ON" : "OFF"}): ${r.alarm_notes}`.trim());
-  if (r.heating_notify) out.push(`${name("heating", "Calefacció / A.C.")} (${r.heating_on ? "ON" : "OFF"}): ${r.heating_notes}`.trim());
+  const it = (k: string) => r.items.find(x => x.key === k);
+  for (const k of ["water", "power", "gas"] as const) {
+    const i = it(k);
+    if (i && (i.state === "mal" || i.notify)) out.push(`${name(k, REV_INSTAL.find(d => d.key === k)!.label)} (${r[`${k}_on`] ? "ON" : "OFF"})${i.state === "mal" ? ` (${W("bad")})` : ""}${i.notes ? ": " + i.notes : ""}`);
+  }
+  const alarmBad = it("alarm")?.state === "mal", heatingBad = it("heating")?.state === "mal";
+  if (r.alarm_notify || alarmBad || (r.alarm_notes && !r.alarm_on)) out.push(`${name("alarm", "Alarma")} (${r.alarm_on ? "ON" : "OFF"})${alarmBad ? ` (${W("bad")})` : ""}${r.alarm_notes ? ": " + r.alarm_notes : ""}`);
+  if (r.heating_notify || heatingBad) out.push(`${name("heating", "Calefacció / A.C.")} (${r.heating_on ? "ON" : "OFF"})${heatingBad ? ` (${W("bad")})` : ""}${r.heating_notes ? ": " + r.heating_notes : ""}`);
   for (const d of [...REV_DINSFORA, ...REV_ESTAT]) {
-    const it = r.items.find(x => x.key === d.key);
-    if (!it) continue;
-    const bad = it.state === "mal" || it.dins || it.fora;
-    const extra = d.extra === "encarregar" && it.extra ? ` — ${W("order")}` : d.extra === "falta_sal" && it.extra ? ` — ${W("salt")}` : d.extra === "caducitat" && it.extra ? ` — ${W("expires")} ${it.extra}` : "";
-    if (bad || it.notify || extra) {
-      const where = d.kind === "dinsfora" ? [it.dins && W("inside"), it.fora && W("outside")].filter(Boolean).join(` ${W("and")} `) : it.state === "mal" ? W("bad") : "";
-      out.push(`${name(d.key, d.label)}${where ? ` (${where})` : ""}${extra}${it.notes ? ": " + it.notes : ""}`);
+    const i = it(d.key);
+    if (!i) continue;
+    const bad = i.state === "mal" || i.dins || i.fora;
+    const extra = d.extra === "encarregar" && i.extra ? ` — ${W("order")}` : d.extra === "falta_sal" && i.extra ? ` — ${W("salt")}` : d.extra === "caducitat" && i.extra ? ` — ${W("expires")} ${i.extra}` : "";
+    if (bad || i.notify || extra) {
+      const inOut = [i.dins && W("inside"), i.fora && W("outside")].filter(Boolean).join(` ${W("and")} `);
+      const where = d.kind === "dinsfora" && inOut ? inOut : i.state === "mal" ? W("bad") : "";
+      out.push(`${name(d.key, d.label)}${where ? ` (${where})` : ""}${extra}${i.notes ? ": " + i.notes : ""}`);
     }
   }
   return out;

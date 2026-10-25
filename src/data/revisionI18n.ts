@@ -5,6 +5,9 @@ export type MailLang = "ca" | "es" | "en" | "fr" | "de" | "nl";
 type Tr = Record<Exclude<MailLang, "ca">, string>;
 
 export const ITEM_I18N: Record<string, Tr> = {
+  water:            { es: "Agua", en: "Water", fr: "Eau", de: "Wasser", nl: "Water" },
+  power:            { es: "Luz", en: "Electricity", fr: "Électricité", de: "Strom", nl: "Elektriciteit" },
+  gas:              { es: "Gas", en: "Gas", fr: "Gaz", de: "Gas", nl: "Gas" },
   alarm:            { es: "Alarma", en: "Alarm", fr: "Alarme", de: "Alarmanlage", nl: "Alarm" },
   heating:          { es: "Calefacción / A.A.", en: "Heating / air conditioning", fr: "Chauffage / climatisation", de: "Heizung / Klimaanlage", nl: "Verwarming / airco" },
   pintura_parets:   { es: "Pintura paredes", en: "Wall paint", fr: "Peinture des murs", de: "Wandanstrich", nl: "Verf muren" },

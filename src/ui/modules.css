@@ -326,12 +326,28 @@
 .pending-photos{margin-top:12px;border:1px dashed #c9c0ad;border-radius:6px;padding:10px;display:grid;gap:8px}
 .pending-photos>strong{display:flex;align-items:center;gap:6px;color:#103e33}
 .pending-photos .photo-add{margin-bottom:0}
+.rev-table tr.rev-todo th{box-shadow:inset 3px 0 #e2b45c}
+.rev-dinsfora{display:inline-flex;gap:4px}
+.item-photo{display:inline-flex;gap:4px;align-items:center}
+.ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:26px;padding:0 8px;border:1px solid #cfc7b6;border-radius:13px;background:#f7f3ea;color:#174c40;font-size:11px;font-weight:700}
+.ph-btn span{display:none}
+.ph-count{min-width:22px;height:22px;border-radius:11px;background:#174c40;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 6px}
+.rev-progress{margin-right:auto;align-self:center;font-size:12px;color:#2f8a4f;font-weight:700}
+.rev-progress.todo{color:#a8641a}
 
 @media(max-width:760px){
   .case-head{padding:12px}
   .case-head dl{grid-template-columns:1fr 1fr}
   .plan-row small{display:block;width:100%}
   .sub-tabs{overflow-x:auto}
+  .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .photo-grid figcaption input{font-size:14px}
+  .note-actions .outline-btn{width:100%;justify-content:center;padding:12px;font-size:14px}
+  .cases-table th:nth-child(n+3):nth-child(-n+6),.cases-table td:nth-child(n+3):nth-child(-n+6){display:none}
+}
+
+/* Revisió a la tauleta i al mòbil: targetes amb botons grans */
+@media(max-width:1100px){
   .h3-actions .add-small,.rev-form .data-panel-title .add-small{padding:9px 12px;font-size:13px}
   .rev-form .data-panel-title{height:auto;min-height:44px;flex-wrap:wrap;padding:6px 10px}
   .rev-form .data-panel-body{padding:10px}
@@ -373,11 +389,32 @@
   .photo-btns{width:100%}
   .photo-btns button{min-width:0}
   .photo-btns button{flex:1;height:52px;font-size:16px}
-  .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .photo-grid figcaption input{font-size:14px}
-  .note-actions .outline-btn{width:100%;justify-content:center;padding:12px;font-size:14px}
-  .cases-table th:nth-child(n+3):nth-child(-n+6),.cases-table td:nth-child(n+3):nth-child(-n+6){display:none}
+  .rev-table tr.rev-reading th{grid-column:1/-1}
+  .rev-table tr.rev-inst th{grid-column:span 2;align-self:center}
+  .rev-table tr.rev-inst .rev-onoff{grid-column:3;justify-self:end}
+  .rev-table .rev-photo{grid-column:1/-1;order:6}
+  .rev-table .rev-notify{order:4}
+  .rev-table tbody tr{padding-left:12px;padding-right:8px}
+  .rev-table tr.rev-todo{box-shadow:inset 4px 0 #e2b45c}
+  .item-photo{width:100%}
+  .item-photo .ph-btn{flex:1;height:46px;font-size:15px;border-radius:8px}
+  .ph-btn span{display:inline}
+  .rev-dinsfora{width:100%}
+  .rev-dinsfora .chip-btn{flex:1}
+  .rev-progress{flex-basis:100%;text-align:center}
 }
+/* Tauleta apaïsada (pantalla tàctil): la taula es manté, però amb botons per al dit */
+@media(pointer:coarse) and (min-width:1101px){
+  .chip-btn{height:40px;min-width:58px;border-radius:20px;font-size:13px}
+  .ph-btn{height:40px;padding:0 12px;border-radius:20px}
+  .toggle{height:40px;padding:0 12px 0 5px;font-size:12px;border-radius:20px}
+  .toggle span{width:28px;height:28px}
+  .rev-table td input[type=text],.rev-table td input:not([type]),.rev-table td input[type=date],.rev-table td input[type=month]{height:40px;font-size:15px}
+  .rev-head input,.rev-head select{height:40px;font-size:15px}
+  .rev-savebar button{height:48px;font-size:15px}
+}
+/* mentre es fa una revisió en una pantalla estreta, s'amaga la llista per anar per feina */
+@media(max-width:1250px){.rev-layout.editing>.data-panel:first-child{display:none}}
 
 /* --- Històric de baixes --- */
 .baixa-fitxa{display:grid;gap:12px}
