@@ -47,7 +47,7 @@ export function ContractsPage({ canWrite, canDelete }: { canWrite: boolean; canD
               {rows.map(c => (
                 <tr key={c.id} className={(sel?.id === c.id ? "row-sel " : "") + (!c.active ? "row-off" : "")} onClick={() => setSel({ ...c })}>
                   <td><strong>{c.description}</strong></td><td>{Number(c.price).toLocaleString("ca-ES")} €</td><td>{c.num_revisions}</td>
-                  <td className="wrap">{CONTRACT_FLAGS.filter(([k]) => c[k]).map(([, l]) => l).join(" · ") || "—"}</td><td>{c.uses}</td>
+                  <td className="wrap">{[...CONTRACT_FLAGS.filter(([k]) => c[k]).map(([, l]) => l), ...c.other_services].join(" · ") || "—"}</td><td>{c.uses}</td>
                 </tr>))}
               {!rows.length && <tr className="no-hover"><td colSpan={5} className="table-empty">Encara no hi ha tipus de contracte.{canWrite && " Prem «Nou tipus»."}</td></tr>}
             </tbody>
@@ -61,6 +61,18 @@ export function ContractsPage({ canWrite, canDelete }: { canWrite: boolean; canD
               <TextInput label="Núm. de revisions/any" type="number" value={sel.num_revisions} onChange={v => setSel({ ...sel, num_revisions: v })} />
               {CONTRACT_FLAGS.map(([k, l]) => <CheckInput key={k} label={l} checked={!!sel[k]} onChange={v => setSel({ ...sel, [k]: v })} />)}
               <CheckInput label="Actiu" checked={sel.active} onChange={v => setSel({ ...sel, active: v })} />
+            </div>
+            <div className="sub-list">
+              <div className="sub-head">Altres opcions incloses
+                {canWrite && <button type="button" className="link-btn" onClick={() => setSel({ ...sel, other_services: [...sel.other_services, ""] })}>+ afegir una altra opció</button>}</div>
+              {sel.other_services.map((o, i) => (
+                <div className="row-line" key={i} style={{ gridTemplateColumns: "1fr auto" }}>
+                  <input aria-label="Opció" placeholder="Escriu el text de l'opció (p. ex. Neteja de la piscina)" value={o} autoFocus={!o}
+                    onChange={e => setSel({ ...sel, other_services: sel.other_services.map((x, j) => j === i ? e.target.value : x) })} />
+                  <button type="button" className="icon-del" title="Treure" onClick={() => setSel({ ...sel, other_services: sel.other_services.filter((_, j) => j !== i) })}><Trash2 size={14} /></button>
+                </div>
+              ))}
+              {!sel.other_services.length && <p className="hint">Si el contracte inclou alguna cosa més, prem «+ afegir una altra opció» i escriu-ne el text.</p>}
             </div>
             {canWrite && <div className="tab-actions inline"><button className="save-btn" onClick={save}><Save size={16} /> Guardar</button><button className="cancel-btn" onClick={() => setSel(null)}><X size={16} /> Cancel·lar</button>
               {sel.id && canDelete && <button className="cancel-btn danger-btn" onClick={remove}><Trash2 size={16} /> Esborrar</button>}</div>}
