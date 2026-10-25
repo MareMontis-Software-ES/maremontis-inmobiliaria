@@ -5,7 +5,6 @@ import type { Session } from "@supabase/supabase-js";
 import { House } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { currentProfile } from "../data/lookups";
-import { dashboardCounts } from "../data/properties";
 import { LoginScreen } from "../modules/auth/LoginScreen";
 import { Shell } from "../modules/layout/Shell";
 import { Dashboard } from "../modules/dashboard/Dashboard";
@@ -31,7 +30,6 @@ export default function App() {
   const [section, setSection] = useState<Section>("Inici");
   const [clientView, setClientView] = useState<ClientView>({ mode: "list" });
   const [query, setQuery] = useState("");
-  const [overdue, setOverdue] = useState(0);
   const [perms, setPerms] = useState<Perms | null>(null);
 
   useEffect(() => {
@@ -50,10 +48,6 @@ export default function App() {
 
   // Permisos per apartat segons el rol (Configuració → Permisos per rol)
   useEffect(() => { if (profile) permissionsFor(profile.role).then(setPerms).catch(() => setPerms(null)); }, [profile?.role]);
-
-  useEffect(() => {
-    if (session && profile) dashboardCounts().then(c => setOverdue(c.overdue)).catch(() => {});
-  }, [session?.user.id, profile, section]);
 
   if (!authReady) return <div className="auth-screen"><section className="auth-card"><div className="brand-symbol"><House size={38} /></div><h1>MareMontis</h1><p>Gestió immobiliària</p><span>Comprovant la sessió…</span></section></div>;
   if (!session) return <LoginScreen />;
@@ -77,7 +71,7 @@ export default function App() {
   const crumb = "";
 
   return (
-    <Shell section={section} crumb={crumb} visible={allowed} profile={profile} email={session.user.email || ""} query={query} overdue={overdue}
+    <Shell section={section} crumb={crumb} visible={allowed} profile={profile} email={session.user.email || ""} query={query}
       onNavigate={go}
       onSearch={q => { setQuery(q); setSection("Clients"); setClientView({ mode: "list" }); }}
       onPick={h => {

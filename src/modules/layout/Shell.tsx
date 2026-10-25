@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
-import { AlertTriangle, BarChart3, Bell, Building2, CalendarDays, ChevronRight, FileText, House, KeyRound, Landmark, LogOut, Settings, UserRound, Users, Wrench } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AlertTriangle, BarChart3, Bell, Building2, CalendarDays, ChevronDown, ChevronRight, CircleHelp, FileText, House, KeyRound, Landmark, LogOut, Settings, UserRound, Users, Wrench } from "lucide-react";
 import type { Profile, Section } from "../../types";
 import type { SearchHit } from "../../data/search";
 import { GlobalSearch } from "./GlobalSearch";
+import { HelpPanel } from "../help/HelpPanel";
 import logo from "../../assets/logo-maremontis.png";
 
 // Menú lateral. Els mòduls marcats amb «pending» encara no estan desenvolupats.
@@ -29,7 +30,6 @@ interface Props {
   profile: Profile | null;
   email: string;
   query: string;
-  overdue: number;
   onNavigate: (s: Section) => void;
   onSearch: (q: string) => void;
   onPick: (h: SearchHit) => void;
@@ -37,7 +37,36 @@ interface Props {
   children: ReactNode;
 }
 
-export function Shell({ section, crumb, visible, profile, email, overdue, onNavigate, onSearch, onPick, onLogout, children }: Props) {
+// Bloc d'usuari de la capçalera: en clicar-lo s'obre un menú amb «Tancar sessió»
+function UserMenu({ profile, email, onLogout }: { profile: Profile | null; email: string; onLogout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", close); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [open]);
+  return (
+    <div className="user-menu" ref={ref}>
+      <button className="user-profile" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <div className="user-icon"><Users size={19} /></div>
+        <div><strong>{profile?.full_name || email}</strong><small>{profile ? ROLE_LABEL[profile.role] : "Sense perfil"}</small></div>
+        <ChevronDown size={16} />
+      </button>
+      {open && (
+        <div className="user-dropdown" role="menu">
+          <div className="user-dropdown-head"><strong>{profile?.full_name || email}</strong><small>{email}</small></div>
+          <button role="menuitem" onClick={() => { setOpen(false); onLogout(); }}><LogOut size={16} />Tancar sessió</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Shell({ section, crumb, visible, profile, email, onNavigate, onSearch, onPick, onLogout, children }: Props) {
+  const [help, setHelp] = useState(false);
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -51,10 +80,6 @@ export function Shell({ section, crumb, visible, profile, email, overdue, onNavi
         </nav>
         <div className="sidebar-bottom">
           {visible("Configuració") && <button className={"nav-item " + (section === "Configuració" ? "active" : "")} onClick={() => onNavigate("Configuració")}><Settings size={22} /><span>Configuració</span></button>}
-          <div className="user-profile">
-            <div className="user-icon"><Users size={19} /></div>
-            <div><strong>{profile?.full_name || email}</strong><small>{profile ? ROLE_LABEL[profile.role] : "Sense perfil"}</small></div>
-          </div>
         </div>
       </aside>
       <main className="main-area">
@@ -62,12 +87,13 @@ export function Shell({ section, crumb, visible, profile, email, overdue, onNavi
           <div className="breadcrumb">{section}{crumb && <><ChevronRight size={14} /><span>{crumb}</span></>}</div>
           <GlobalSearch onPick={onPick} onSearchClients={onSearch} />
           <div className="top-actions">
-            <button aria-label="Alertes vençudes" title="Alertes vençudes" onClick={() => onNavigate("Inici")}><Bell size={22} />{overdue > 0 && <i>{overdue}</i>}</button>
-            <button aria-label="Sortir" title="Tancar sessió" onClick={onLogout}><LogOut size={22} /></button>
+            <button className="help-button" aria-label="Ajuda" title="Ajuda: modus d'ús del programa" onClick={() => setHelp(true)}><CircleHelp size={26} /></button>
+            <UserMenu profile={profile} email={email} onLogout={onLogout} />
           </div>
         </div>
         {children}
       </main>
+      {help && <HelpPanel section={section} onClose={() => setHelp(false)} />}
     </div>
   );
 }
